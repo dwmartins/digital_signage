@@ -1,0 +1,29 @@
+/*
+|--------------------------------------------------------------------------
+| Sobrescritas do Bootstrap
+|--------------------------------------------------------------------------
+|
+| Use este arquivo apenas para ajustar classes e comportamentos vindos do
+| Bootstrap. Mantenha estilos globais da aplicação em app.css.
+|
+*/
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.border-primary {
+    border-color: var(--primary-color) !important;
+}
+
+.link-primary {
+    color: var(--primary-color) !important;
+}
+
+.link-primary:hover {
+    color: var(--p-primary-700) !important;
+}

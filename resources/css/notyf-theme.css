@@ -1,0 +1,28 @@
+.notyf__toast--success{
+    background-color: #48c78e !important;
+    color: #fff !important;
+}
+
+.notyf__toast--error{
+    background-color: #f14668 !important;
+    color: #fff !important;
+}
+
+.notyf-info {
+    background-color: #209cee !important;
+    color: #fff !important;
+}
+
+.notyf-warning {
+    background-color: #f59e0b !important;
+    color: #fff !important;
+}
+
+.notyf__toast {
+    border-radius: 6px !important;
+    max-width: 423px;
+}
+
+.notyf__icon {
+    color: currentColor !important;
+}

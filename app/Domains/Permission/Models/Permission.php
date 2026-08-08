@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Domains\Permission\Models;
+
+use App\Domains\User\Models\User;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+#[Fillable([
+    'name',
+    'slug',
+    'group',
+    'description',
+])]
+class Permission extends Model
+{
+    /*
+    |--------------------------------------------------------------------------
+    | PERMISSÕES INTERNAS DA PLATAFORMA
+    |--------------------------------------------------------------------------
+    */
+    public const CUSTOMERS_VIEW   = 'customers.view';
+    public const CUSTOMERS_CREATE = 'customers.create';
+    public const CUSTOMERS_UPDATE = 'customers.update';
+    public const CUSTOMERS_DELETE = 'customers.delete';
+    public const CUSTOMERS_AUDIT_UPDATE = 'customers.audit.update';
+
+    public const SUPPORT_USERS_VIEW   = 'support-users.view';
+    public const SUPPORT_USERS_CREATE = 'support-users.create';
+    public const SUPPORT_USERS_UPDATE = 'support-users.update';
+    public const SUPPORT_USERS_DELETE = 'support-users.delete';
+
+    /**
+     * Usuários suporte da plataforma que possuem esta permissão individualmente.
+     *
+     * @return BelongsToMany<User>
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'permission_user')
+            ->withTimestamps();
+    }
+
+    /**
+     * Retorna todos os slugs de permissões conhecidas.
+     *
+     * @return array<int, string>
+     */
+    public static function catalogSlugs(): array
+    {
+        return array_keys(self::platformCatalog());
+    }
+
+    /**
+     * Catálogo de permissões internas da plataforma.
+     *
+     * @return array<string, array{name: string, group: string, group_label: string, description: string}>
+     */
+    public static function platformCatalog(): array
+    {
+        return [
+            self::CUSTOMERS_VIEW   => [
+                'name' => 'Visualizar empresas',
+                'group' => 'customers',
+                'group_label' => 'Empresas',
+                'description' => 'Permite consultar a lista de empresas cadastradas, seus dados principais e informações relacionadas.',
+            ],
+            self::CUSTOMERS_CREATE => [
+                'name' => 'Criar empresas',
+                'group' => 'customers',
+                'group_label' => 'Empresas',
+                'description' => 'Permite cadastrar novas empresas clientes na plataforma.',
+            ],
+            self::CUSTOMERS_UPDATE => [
+                'name' => 'Editar empresas',
+                'group' => 'customers',
+                'group_label' => 'Empresas',
+                'description' => 'Permite alterar dados cadastrais, contatos e status das empresas existentes.',
+            ],
+            self::CUSTOMERS_DELETE => [
+                'name' => 'Excluir empresas',
+                'group' => 'customers',
+                'group_label' => 'Empresas',
+                'description' => 'Permite remover empresas cadastradas da plataforma.',
+            ],
+            /** 
+             * 
+            */
+            self::SUPPORT_USERS_VIEW   => [
+                'name' => 'Visualizar usuários suporte',
+                'group' => 'users-support',
+                'group_label' => 'Usuários suporte',
+                'description' => 'Permite consultar usuários internos de suporte da plataforma.',
+            ],
+            self::SUPPORT_USERS_CREATE => [
+                'name' => 'Criar usuários suporte',
+                'group' => 'users-support',
+                'group_label' => 'Usuários suporte',
+                'description' => 'Permite cadastrar novos usuários internos de suporte da plataforma.',
+            ],
+            self::SUPPORT_USERS_UPDATE => [
+                'name' => 'Editar usuários suporte',
+                'group' => 'users-support',
+                'group_label' => 'Usuários suporte',
+                'description' => 'Permite alterar cadastro, status e permissões de usuários internos de suporte.',
+            ],
+            self::SUPPORT_USERS_DELETE => [
+                'name' => 'Excluir usuários suporte',
+                'group' => 'users-support',
+                'group_label' => 'Usuários suporte',
+                'description' => 'Permite excluir usuários internos de suporte da plataforma.',
+            ],
+        ];
+    }
+}

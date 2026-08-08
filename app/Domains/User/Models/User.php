@@ -3,24 +3,30 @@
 namespace App\Domains\User\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Domains\Appearance\Models\UserAppearanceSetting;
+use App\Domains\Permission\Models\Permission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
-    'name', 
-    'email', 
+    'name',
+    'email',
     'last_name',
     'phone',
+    'password',
     'role',
     'status',
-    'last_login_at'
+    'last_login_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 #[Appends(['full_name', 'avatar_url'])]
@@ -29,12 +35,13 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
-    public const STATUS_ACTIVE   = 'active';
+    public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
-    public const STATUS_BLOCKED  = 'blocked';
+    public const STATUS_BLOCKED = 'blocked';
 
     public const ROLE_ADMIN = 'admin';
     public const ROLE_SUPPORT = 'support';
+    public const ROLE_CUSTOMER = 'customer';
 
     const AVATAR_PATH = 'images/avatars';
 
@@ -50,7 +57,34 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELAÇÕES
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Permissões individuais vinculadas diretamente ao usuário suporte da plataforma.
+     *
+     * @return BelongsToMany<Permission>
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'permission_user')
+            ->withTimestamps();
+    }
+
+    /**
+     * Preferências visuais do usuário.
+     *
+     * @return HasOne<UserAppearanceSetting>
+     */
+    public function appearanceSetting(): HasOne
+    {
+        return $this->hasOne(UserAppearanceSetting::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | ATTRIBUTES
@@ -58,16 +92,14 @@ class User extends Authenticatable
     */
     /**
      * Retorna o nome e sobrenome concatenado.
-     * @return string
      */
     public function getFullNameAttribute(): string
     {
-        return trim("{$this->name} " . ($this->last_name ?? ''));
+        return trim("{$this->name} ".($this->last_name ?? ''));
     }
 
     /**
      * Retorna a url completa para a imagem do usuário.
-     * @return string
      */
     public function getAvatarUrlAttribute(): ?string
     {
@@ -78,11 +110,25 @@ class User extends Authenticatable
         }
 
         $initials = collect(explode(' ', $this->full_name))
-            ->map(fn($w) => strtoupper($w[0]))
+            ->map(fn ($w) => strtoupper($w[0]))
             ->take(2)
             ->join('');
 
         return "https://ui-avatars.com/api/?name={$initials}&background=e2e8f0&color=334155&size=128";
+    }
+
+    /**
+     * Retorna a aparência do usuário no formato consumido pelo frontend.
+     *
+     * @return array{preset: string, primary: string, surface: string, dark_mode: bool}
+     */
+    public function getAppearanceSettingsAttribute(): array
+    {
+        $appearanceSetting = $this->relationLoaded('appearanceSetting')
+            ? $this->appearanceSetting
+            : $this->appearanceSetting()->first();
+
+        return $appearanceSetting?->toSettingsArray() ?? UserAppearanceSetting::defaults();
     }
 
     /*
@@ -100,11 +146,35 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica se o usuário é um admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Verifica se o usuário é um suporte
+     */
+    public function isSupport(): bool
+    {
+        return $this->role === self::ROLE_SUPPORT;
+    }
+
+    /**
+     * Verifica se o usuário cliente
+     */
+    public function isCustomer(): bool
+    {
+        return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    /**
      * Retorna a mensagem que explica por que o login foi bloqueado.
      */
     public function loginBlockMessage(): string
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return match ($this->status) {
                 self::STATUS_BLOCKED => 'Usuário bloqueado.',
                 self::STATUS_INACTIVE => 'Usuário inativo.',
@@ -117,7 +187,6 @@ class User extends Authenticatable
 
     /**
      * Atualiza a o dia e hora do ultimo login.
-     * @return void
      */
     public function updateLastLogin(): void
     {
@@ -129,7 +198,6 @@ class User extends Authenticatable
 
     /**
      * Exclui a foto de avatar do usuário.
-     * @return void
      */
     public function deleteAvatar(): void
     {
@@ -138,5 +206,53 @@ class User extends Authenticatable
         if ($this->avatar && Storage::disk('public')->exists("{$avatar_path }/{$this->avatar}")) {
             Storage::disk('public')->delete("{$avatar_path }/{$this->avatar}");
         }
+    }
+
+    /**
+     * Retorna os dados de autorização usados pelo frontend.
+     *
+     * @return array<string, mixed>
+     */
+    public function authContext(): array
+    {
+        return [
+            'permissions' => $this->permissionSlugs(),
+        ];
+    }
+
+    /**
+     * Retorna os slugs de permissões disponíveis para o usuário suporte.
+     */
+    public function permissionSlugs(): array
+    {
+        if ($this->isAdmin()) {
+            return Permission::catalogSlugs();
+        }
+
+        if (! $this->isSupport()) {
+            return [];
+        }
+
+        return $this->permissions()
+            ->whereIn('slug', Permission::catalogSlugs())
+            ->pluck('slug')
+            ->all();
+    }
+
+    /**
+     * Verifica uma permissão interna da plataforma.
+     */
+    public function hasPlatformPermission(string $permission): bool
+    {
+        if (! $this->isActive() || ! in_array($permission, Permission::catalogSlugs(), true)) {
+            return false;
+        }
+
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->isSupport()
+            && $this->permissions()->where('slug', $permission)->exists();
     }
 }

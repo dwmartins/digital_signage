@@ -1,1 +1,118 @@
 @import '@fortawesome/fontawesome-free/css/all.min.css';
+
+:root {
+    --primary-color: #008e96;
+
+    --p-primary-50:  #ecfeff;
+    --p-primary-100: #cffafe;
+    --p-primary-200: #a5f3fc;
+    --p-primary-300: #67e8f9;
+    --p-primary-400: #22d3ee;
+    --p-primary-500: #008e96;
+    --p-primary-600: #087982;
+    --p-primary-700: #0f626a;
+    --p-primary-800: #155158;
+    --p-primary-900: #16454b;
+    --p-primary-950: #082f34;
+
+    --p-card-color: #334155;
+
+    --danger-color: #ef4444;
+    --danger-color-hover: #dc2626;
+
+    --success-color: #22C55E;
+
+    --font-poppins: 'Poppins', sans-serif;
+    --font-baloo: 'Baloo Paaji 2', sans-serif;
+    --font-inter: 'Inter', sans-serif;
+
+    --cards-dark: #18181b; 
+    --body-dark: #0a0a0a;
+    --app-page-bg: #f1f5f9;
+    --app-content-bg: #ffffff;
+    --app-header-bg: #ffffff;
+    --app-border-color: #e2e8f0;
+
+    --text-title: #111827;
+
+    --breadcrumb-color: #64748b;
+    --breadcrumb-color-hover: #4c5869;
+}
+
+body {
+    font-family: var(--font-inter);
+    -webkit-font-smoothing: antialiased;
+    color: var(--p-card-color);
+    background-color: var(--app-page-bg);
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    height: 100%;
+}
+
+html.dark-mode {
+    --p-card-color: #ffffff;
+    background-color: var(--app-page-bg);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.bg-white {
+    background-color: var(--app-content-bg) !important;
+}
+
+html.dark-mode .bg-white {
+    background-color: var(--app-content-bg) !important;
+}
+
+.custom-Breadcrumb {
+    background-color: #f3f4f6;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    margin-bottom: 12px;
+}
+
+.p-dialog-mask {
+    padding: 0 0.7rem;
+}
+
+.fs-1 { font-size: 2.5rem !important; }
+.fs-2 { font-size: 2rem !important; }
+.fs-3 { font-size: 1.75rem !important; }  
+.fs-4 { font-size: 1.5rem !important; }   
+.fs-5 { font-size: 1.25rem !important; }  
+.fs-6 { font-size: 1rem !important; }     
+.fs-7 { font-size: 0.875rem !important; } 
+.fs-8 { font-size: 0.75rem !important; }
+
+.item-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.field label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--p-text-muted-color, #64748b);
+    margin-bottom: .4rem;
+}
+
+html.dark-mode .text-muted {
+    color: #c8d8e7bf !important;
+}
+
+.p-overflow-hidden {
+    padding-right: 0 !important;
+}

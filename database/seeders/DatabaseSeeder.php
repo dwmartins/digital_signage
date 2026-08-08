@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use AddAdminSeeder;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -17,7 +15,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AddAdminSeeder::class
+            AddAdminSeeder::class,
+            AddDefaultPermissionSeeder::class
         ]);
     }
 }

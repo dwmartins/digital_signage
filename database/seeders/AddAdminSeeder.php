@@ -1,8 +1,11 @@
 <?php
 
+namespace Database\Seeders;
+
 use App\Domains\User\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class AddAdminSeeder extends Seeder
 {
@@ -28,9 +31,7 @@ class AddAdminSeeder extends Seeder
                 'last_name' => $lastName,
                 'email_verified_at' => now(),
                 'status' => User::STATUS_ACTIVE,
-                'company_id' => null,
                 'role' => User::ROLE_ADMIN,
-                'current_company_id' => null,
                 'password' => Hash::make($password),
             ],
         );

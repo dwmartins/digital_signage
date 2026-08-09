@@ -3,17 +3,17 @@
 :root {
     --primary-color: #008e96;
 
-    --p-primary-50:  #ecfeff;
-    --p-primary-100: #cffafe;
-    --p-primary-200: #a5f3fc;
-    --p-primary-300: #67e8f9;
-    --p-primary-400: #22d3ee;
-    --p-primary-500: #008e96;
-    --p-primary-600: #087982;
-    --p-primary-700: #0f626a;
-    --p-primary-800: #155158;
-    --p-primary-900: #16454b;
-    --p-primary-950: #082f34;
+    --p-primary-50:  #f5f3ff;
+    --p-primary-100: #ede9fe;
+    --p-primary-200: #ddd6fe;
+    --p-primary-300: #c4b5fd;
+    --p-primary-400: #a78bfa;
+    --p-primary-500: #7c3aed;
+    --p-primary-600: #6d28d9;
+    --p-primary-700: #5b21b6;
+    --p-primary-800: #4c1d95;
+    --p-primary-900: #3b0764;
+    --p-primary-950: #2e1065;
 
     --p-card-color: #334155;
 

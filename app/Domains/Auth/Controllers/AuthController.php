@@ -2,11 +2,12 @@
 
 namespace App\Domains\Auth\Controllers;
 
+use App\Domains\Auth\Requests\LoginRequest;
+use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Domains\User\Models\User;
 
 class AuthController extends Controller
 {
@@ -20,21 +21,40 @@ class AuthController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if(!$user || !$user->isActive()) {
+        if (! $user || ! $user->isActive()) {
             $this->forceLogout($request);
 
             return response()->json([
-                'message'      => 'Sessão inválida.',
-                'is_valid'     => false,
-                'force_logout' => true
+                'message' => 'Sessão inválida.',
+                'is_valid' => false,
+                'force_logout' => true,
             ], 401);
         }
 
         return response()->json([
-            'message'  => 'Usuário autenticado.',
+            'message' => 'Usuário autenticado.',
             'is_valid' => true,
-            'user'     => $user,
-            'auth'     => $this->authPayload($user, $request),
+            'user' => $user,
+            'auth' => $this->authPayload($user, $request),
+        ]);
+    }
+
+    /**
+     * Autentica o usuário usando a sessão do Laravel/Sanctum SPA.
+     * @param LoginRequest $request
+     * @return JsonResponse
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $user = $request->authenticate();
+
+        $request->session()->regenerate();
+        $user->updateLastLogin();
+
+        return response()->json([
+            'message' => 'Login realizado com sucesso.',
+            'user' => $user->fresh(),
+            'auth' => $this->authPayload($user, $request),
         ]);
     }
 

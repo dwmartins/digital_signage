@@ -50,6 +50,7 @@ const onSubmit = async () => {
 
         router.push(authService.dashboardRoute());
     } catch (error) {
+        console.log(error)
         showAlert('error', error.response?.data);
     } finally {
         loading.value = false;

@@ -3,6 +3,7 @@ import authService from "@/services/auth.service";
 import { useAuthStore } from "@/stores/authStore";
 import { pageLoadingStore } from "@/stores/pageLoadingStore";
 import { createRouter, createWebHistory } from "vue-router";
+import platformRoutes from './platform';
 
 const loginView = () => import("@/views/auth/LoginView.vue");
 const NotFoundView = () => import('@/views/NotFoundView.vue'); 
@@ -17,9 +18,7 @@ const routes = [
         name: 'login',
         component: loginView
     },
-    //
-    // Demais rotas aqui
-    //
+    ...platformRoutes,
     {
         path: '/:pathMatch(.*)*',
         name: 'not-found-view',
@@ -66,7 +65,7 @@ router.beforeEach(async (to) => {
         }
     }
 
-    return authService.dashboardRoute();
+    return true;
 });
 
 router.onError((error, to) => {
@@ -105,6 +104,10 @@ function isLazyLoadError(error) {
         || message.includes('module script failed')
         || message.includes('error loading dynamically imported module')
         || message.includes('unable to preload css');
+}
+
+function redirectToDashboard() {
+    return authService.dashboardRoute();
 }
 
 export default router;

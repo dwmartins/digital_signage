@@ -460,16 +460,6 @@ html.dark-mode .sidebar {
     color: #64748b;
 }
 
-.header-company-name {
-    max-width: 280px;
-    line-height: 1.2;
-    overflow: hidden;
-    font-size: 0.78rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-top: 5px;
-}
-
 @media (max-width: 768px) {
     .main-content-area {
         margin-left: 0;

@@ -29,7 +29,7 @@ use Laravel\Sanctum\HasApiTokens;
     'last_login_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
-#[Appends(['full_name', 'avatar_url'])]
+#[Appends(['full_name', 'avatar_url', 'appearance_settings'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

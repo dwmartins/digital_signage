@@ -87,7 +87,11 @@ export default {
 
         authStore.update(user);
         authStore.updatePermissions(auth);
-        themeStore.setAppearance(user?.appearance_settings, { persistLocal: true });
+
+        if (user?.appearance_settings) {
+            themeStore.setAppearance(user.appearance_settings, { persistLocal: true });
+        }
+
         authStore.setIsAuthenticate(true);
     },
 

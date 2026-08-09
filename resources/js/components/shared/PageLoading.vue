@@ -25,6 +25,10 @@ import { pageLoadingStore } from '@/stores/pageLoadingStore';
     z-index: 99999999;
 }
 
+html.dark-mode .page-loading {
+    background-color: var(--app-page-bg);
+}
+
 .loader {
     width: 50px;
     padding: 8px;

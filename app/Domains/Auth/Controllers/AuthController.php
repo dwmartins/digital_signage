@@ -2,6 +2,8 @@
 
 namespace App\Domains\Auth\Controllers;
 
+use App\Domains\Audit\Models\AuditLog;
+use App\Domains\Audit\Services\AuditLogger;
 use App\Domains\Auth\Requests\LoginRequest;
 use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
@@ -78,6 +80,32 @@ class AuthController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }
+    }
+
+    /**
+     * Encerra a sessão autenticada.
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function logout(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        AuditLogger::record(
+            module: AuditLog::MODULE_AUTH,
+            action: AuditLog::ACTION_LOGOUT,
+            description: 'Logout realizado.',
+            auditable: $user,
+            user: $user,
+            request: $request,
+        );
+
+        $this->forceLogout($request);
+
+        return response()->json([
+            'message' => 'Logout realizado com sucesso.',
+        ]);
     }
 
     /**

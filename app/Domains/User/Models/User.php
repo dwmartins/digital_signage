@@ -207,8 +207,8 @@ class User extends Authenticatable
     {
         $avatar_path = self::AVATAR_PATH;
 
-        if ($this->avatar && Storage::disk('public')->exists("{$avatar_path }/{$this->avatar}")) {
-            Storage::disk('public')->delete("{$avatar_path }/{$this->avatar}");
+        if ($this->avatar && Storage::disk('public')->exists("{$avatar_path}/{$this->avatar}")) {
+            Storage::disk('public')->delete("{$avatar_path}/{$this->avatar}");
         }
     }
 

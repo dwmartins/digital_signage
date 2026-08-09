@@ -7,13 +7,15 @@ use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Audit\Services\AuditLogger;
 use App\Domains\Profile\Requests\AppearanceSettingsRequest;
 use App\Domains\Profile\Requests\ProfileRequest;
+use App\Domains\Profile\Requests\UpdateAvatarRequest;
 use App\Domains\Profile\Requests\UpdatePasswordRequest;
+use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Domains\User\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Image;
 
 class ProfileController extends Controller
 {
@@ -86,6 +88,49 @@ class ProfileController extends Controller
 
         return response()->json([
             'message' => 'Senha atualizada com sucesso.',
+        ]);
+    }
+
+    /**
+     * Atualiza a foto de perfil do usuário autenticado.
+     *
+     * O arquivo recebido é orientado, recortado proporcionalmente em 200x200px,
+     * convertido para WebP com 70% de qualidade e salvo no disco público.
+     * O avatar anterior é removido antes de persistir o novo.
+     */
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $avatar = $request->file('avatar');
+        $fileName = 'user_'.$user->id.'_'.now()->format('YmdHisv').'.webp';
+
+        Image::fromUpload($avatar)
+            ->orient()
+            ->cover(200, 200)
+            ->toWebp()
+            ->quality(70)
+            ->storeAs(User::AVATAR_PATH, $fileName, 'public');
+
+        $user->deleteAvatar();
+        $user->avatar = $fileName;
+        $user->save();
+
+        AuditLogger::record(
+            module: AuditLog::MODULE_PROFILE,
+            action: AuditLog::ACTION_AVATAR_UPDATED,
+            description: 'Foto de perfil atualizada.',
+            auditable: $user,
+            user: $user,
+            request: $request,
+        );
+
+        return response()->json([
+            'message' => 'Foto de perfil atualizada com sucesso.',
+            'data' => [
+                'avatar' => $user->avatar,
+                'avatar_url' => $user->avatar_url,
+            ],
         ]);
     }
 

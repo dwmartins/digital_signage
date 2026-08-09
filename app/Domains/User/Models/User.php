@@ -23,10 +23,13 @@ use Laravel\Sanctum\HasApiTokens;
     'email',
     'last_name',
     'phone',
+    'description',
     'password',
     'role',
     'status',
+    'audit_logs_enabled',
     'last_login_at',
+    'birth_date',
 ])]
 #[Hidden(['password', 'remember_token'])]
 #[Appends(['full_name', 'avatar_url', 'appearance_settings'])]
@@ -55,6 +58,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'audit_logs_enabled' => 'boolean',
         ];
     }
 

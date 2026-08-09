@@ -1,5 +1,5 @@
 <script setup>
-import ThemeSettingsDialog from '@/components/shared/dialog/theme/ThemeSettingsDialog.vue';
+import ThemeSettingsDialog from '@/components/dialog/theme/ThemeSettingsDialog.vue';
 import { showAlert } from '@/helpers/alert';
 import { customerNavItems, platformNavItems } from '@/navigations/companyNavigation';
 import authService from '@/services/auth.service';
@@ -143,6 +143,12 @@ async function logout() {
     } catch (error) {
         showAlert('error', error.response?.data);
     }
+}
+
+function profilePath() {
+    if (props.area === 'platform') return '/platform/perfil';
+
+    return '/painel/perfil';
 }
 
 function goToProfile() {
@@ -442,7 +448,7 @@ html.dark-mode .sidebar {
 }
 
 .main-content {
-    padding: 18px;
+    padding: 18px 5px 18px 5px;
 }
 
 .filter {

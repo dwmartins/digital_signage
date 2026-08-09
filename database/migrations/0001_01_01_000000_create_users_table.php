@@ -19,10 +19,13 @@ return new class extends Migration
             $table->string('phone', 32)->nullable();
             $table->string('role');
             $table->string('status', 32)->default('active')->index();
+            $table->longText('description')->nullable();
+            $table->date('birth_date')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('avatar', 100)->nullable();
             $table->timestamp('last_login_at')->nullable();
+            $table->boolean('audit_logs_enabled')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

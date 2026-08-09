@@ -10,7 +10,9 @@ function defaultUser() {
         full_name: null,
         email: null,
         phone: null,
+        description: null,
         email_verified_at: null,
+        birth_date: null,
         avatar: null,
         avatar_url: null,
         appearance_settings: null,
@@ -113,6 +115,8 @@ export const useAuthStore = defineStore('user', () => {
             default:
                 break;
         }
+
+        return role_name;
     }
 
     /**

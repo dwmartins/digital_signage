@@ -35,6 +35,10 @@ class AuditLogger
         $request ??= request();
         $user ??= Auth::user();
 
+        if ($user && !$user->audit_logs_enabled && !$force) {
+            return null;
+        }
+
         return AuditLog::query()->create([
             'user_id' => $user?->id,
             'module' => $module,

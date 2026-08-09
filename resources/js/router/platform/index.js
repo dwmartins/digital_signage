@@ -1,6 +1,7 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
+const profileView = () => import('@/views/ProfileView.vue');
 
 export default [
     {
@@ -18,6 +19,11 @@ export default [
                 name: 'platform.dashboard',
                 component: dashboardView,
                 meta: { title: 'Dashboard da plataforma' },
+            },
+            {
+                path: 'perfil',
+                name: 'platform.profile',
+                component: profileView
             },
         ]
     }

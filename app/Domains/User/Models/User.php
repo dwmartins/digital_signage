@@ -38,6 +38,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
+    /** @var array<int, string>|null */
+    protected ?array $permissionSlugCache = null;
+
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
     public const STATUS_BLOCKED = 'blocked';
@@ -142,11 +145,31 @@ class User extends Authenticatable
     */
 
     /**
+     * Verifica se o usuário suporte possui uma permissão específica.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return in_array($permission, $this->supportPermissionSlugs(), true);
+    }
+
+    /**
      * Verifica se o usuário pode continuar usando o sistema.
      */
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;
+    }
+
+    /**
+     * Verifica se o usuário tem acesso à área administrativa da plataforma.
+     */
+    public function isPlatformUser(): bool
+    {
+        return $this->isAdmin() || $this->isSupport();
     }
 
     /**
@@ -237,10 +260,7 @@ class User extends Authenticatable
             return [];
         }
 
-        return $this->permissions()
-            ->whereIn('slug', Permission::catalogSlugs())
-            ->pluck('slug')
-            ->all();
+        return $this->supportPermissionSlugs();
     }
 
     /**
@@ -248,15 +268,39 @@ class User extends Authenticatable
      */
     public function hasPlatformPermission(string $permission): bool
     {
-        if (! $this->isActive() || ! in_array($permission, Permission::catalogSlugs(), true)) {
+        if (!$this->isActive()) {
             return false;
         }
 
-        if ($this->isAdmin()) {
-            return true;
+        return $this->hasPermission($permission);
+    }
+
+    /**
+     * Limpa as permissões armazenadas no model após alterações no vínculo.
+     */
+    public function forgetPermissionCache(): static
+    {
+        $this->permissionSlugCache = null;
+
+        return $this;
+    }
+
+    /**
+     * Permissões vinculadas ao usuário suporte, armazenadas no model durante a request.
+     *
+     * @return array<int, string>
+     */
+    private function supportPermissionSlugs(): array
+    {
+        if ($this->permissionSlugCache === null) {
+            $this->permissionSlugCache = $this->permissions()
+                ->whereIn('slug', Permission::catalogSlugs())
+                ->pluck('permissions.slug')
+                ->unique()
+                ->values()
+                ->all();
         }
 
-        return $this->isSupport()
-            && $this->permissions()->where('slug', $permission)->exists();
+        return $this->permissionSlugCache;
     }
 }

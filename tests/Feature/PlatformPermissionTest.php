@@ -45,6 +45,7 @@ it('permite ao suporte apenas as permissões vinculadas', function () {
     $this->actingAs($support)->getJson('/api/test/permission')->assertForbidden();
 
     $support->permissions()->attach($permission);
+    $support->forgetPermissionCache();
 
     expect($support->hasPlatformPermission(Permission::CUSTOMERS_VIEW))->toBeTrue()
         ->and($support->permissionSlugs())->toBe([Permission::CUSTOMERS_VIEW]);

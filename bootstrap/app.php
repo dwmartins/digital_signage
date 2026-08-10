@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Auth\Middleware\EnsurePlatformAccess;
 use App\Http\Middleware\EnsureUserHasPermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,8 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
+            'platform' => EnsurePlatformAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

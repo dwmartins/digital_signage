@@ -1,4 +1,5 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import supportUsers from './supportUsers';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -25,6 +26,8 @@ export default [
                 name: 'platform.profile',
                 component: profileView
             },
+
+            ...supportUsers
         ]
     }
 ];

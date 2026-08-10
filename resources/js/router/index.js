@@ -65,6 +65,10 @@ router.beforeEach(async (to) => {
         }
     }
 
+    if(!canAccessRoute(to, auth)) {
+        return redirectToDashboard();
+    }
+
     return true;
 });
 
@@ -95,6 +99,14 @@ async function validateSession() {
     })();
 
     return sessionValidationPromise;
+}
+
+function canAccessRoute(to, auth) {
+    if(to.meta.requiresPlatformUser && !auth.isPlatformUser()) {
+        return false;
+    }
+
+    return !to.meta.permission || auth.hasPermission(to.meta.permission);
 }
 
 function isLazyLoadError(error) {

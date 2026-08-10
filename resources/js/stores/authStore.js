@@ -141,11 +141,20 @@ export const useAuthStore = defineStore('user', () => {
     }
 
     /**
+     *  Verifica se o usuário tem acesso à área administrativa da plataforma.
+     */
+    function isPlatformUser() {
+        return isAdmin() || isSupport();
+    }
+
+    /**
      * Verifica se o usuário possui uma permissão.
      * @param {string} permission
      * @returns {boolean}
      */
     function hasPermission(permission) {
+        if(isAdmin()) return true;
+
         return user.permissions.includes(permission);
     }
 
@@ -162,6 +171,7 @@ export const useAuthStore = defineStore('user', () => {
         hasPermission,
         isAdmin,
         isSupport,
-        isCustomer
+        isCustomer,
+        isPlatformUser
     }
 });

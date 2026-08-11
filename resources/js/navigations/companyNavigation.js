@@ -1,6 +1,13 @@
 export const platformNavItems = [
     { label: 'Dashboard', icon: 'pi pi-chart-line', to: '/platform/painel' },
     { label: 'Clientes anunciantes', icon: 'pi pi-users', to: '/platform/clientes', permission: 'customers.view' },
+    {
+        label: 'Campanha',
+        icon: 'pi pi-megaphone',
+        children: [
+            { label: 'Categorias', icon: 'pi pi-tags', to: '/platform/categorias', permission: 'categories.view' },
+        ],
+    },
     { label: 'Usuários suporte', icon: 'pi pi-headphones', to: '/platform/usuarios-suporte', permission: 'support-users.view' },
 ];
 

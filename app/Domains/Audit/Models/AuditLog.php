@@ -27,6 +27,7 @@ class AuditLog extends Model
 {
     public const MODULE_AUTH = 'auth';
     public const MODULE_CUSTOMERS = 'customers';
+    public const MODULE_CATEGORIES = 'categories';
     public const MODULE_PLANS = 'plans';
     public const MODULE_PROFILE = 'profile';
     public const MODULE_SUPPORT_USERS = 'support_users';
@@ -53,6 +54,7 @@ class AuditLog extends Model
         return [
             ['label' => 'Autenticação', 'value' => self::MODULE_AUTH],
             ['label' => 'Clientes anunciantes', 'value' => self::MODULE_CUSTOMERS],
+            ['label' => 'Categorias', 'value' => self::MODULE_CATEGORIES],
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],

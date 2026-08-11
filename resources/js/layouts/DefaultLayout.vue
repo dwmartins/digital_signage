@@ -6,7 +6,7 @@ import authService from '@/services/auth.service';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { computed, reactive } from 'vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const props = defineProps({
@@ -54,6 +54,10 @@ const accountMenuItems = computed(() => {
 onMounted(() => {
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
+});
+
+watch(() => route.path, () => {
+    Object.keys(openNavGroups).forEach(key => delete openNavGroups[key]);
 });
 
 function checkScreenSize() {

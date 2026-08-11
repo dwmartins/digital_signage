@@ -1,6 +1,7 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import supportUsers from './supportUsers';
 import customerUsers from './customerUsers';
+import categories from './categories';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -29,7 +30,8 @@ export default [
             },
 
             ...supportUsers,
-            ...customerUsers
+            ...customerUsers,
+            ...categories
         ]
     }
 ];

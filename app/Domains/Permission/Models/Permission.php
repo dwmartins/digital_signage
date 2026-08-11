@@ -26,6 +26,11 @@ class Permission extends Model
     public const CUSTOMERS_DELETE = 'customers.delete';
     public const CUSTOMERS_AUDIT_UPDATE = 'customers.audit.update';
 
+    public const CATEGORIES_VIEW = 'categories.view';
+    public const CATEGORIES_CREATE = 'categories.create';
+    public const CATEGORIES_UPDATE = 'categories.update';
+    public const CATEGORIES_DELETE = 'categories.delete';
+
     public const SUPPORT_USERS_VIEW   = 'support-users.view';
     public const SUPPORT_USERS_CREATE = 'support-users.create';
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
@@ -98,6 +103,30 @@ class Permission extends Model
                 'group' => 'customers',
                 'group_label' => 'Clientes anunciantes',
                 'description' => 'Permite excluir usuários anunciantes da plataforma.',
+            ],
+            self::CATEGORIES_VIEW => [
+                'name' => 'Visualizar categorias',
+                'group' => 'categories',
+                'group_label' => 'Categorias',
+                'description' => 'Permite consultar as categorias utilizadas nas campanhas.',
+            ],
+            self::CATEGORIES_CREATE => [
+                'name' => 'Criar categorias',
+                'group' => 'categories',
+                'group_label' => 'Categorias',
+                'description' => 'Permite cadastrar categorias para classificação das campanhas.',
+            ],
+            self::CATEGORIES_UPDATE => [
+                'name' => 'Editar categorias',
+                'group' => 'categories',
+                'group_label' => 'Categorias',
+                'description' => 'Permite alterar dados e status das categorias.',
+            ],
+            self::CATEGORIES_DELETE => [
+                'name' => 'Excluir categorias',
+                'group' => 'categories',
+                'group_label' => 'Categorias',
+                'description' => 'Permite excluir categorias que não estejam em uso.',
             ],
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',

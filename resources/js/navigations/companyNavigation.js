@@ -8,6 +8,13 @@ export const platformNavItems = [
             { label: 'Categorias', icon: 'pi pi-tags', to: '/platform/categorias', permission: 'categories.view' },
         ],
     },
+    {
+        label: 'Rede',
+        icon: 'pi pi-sitemap',
+        children: [
+            { label: 'Estabelecimentos', icon: 'pi pi-building', to: '/platform/estabelecimentos', permission: 'establishments.view' },
+        ],
+    },
     { label: 'Usuários suporte', icon: 'pi pi-headphones', to: '/platform/usuarios-suporte', permission: 'support-users.view' },
 ];
 

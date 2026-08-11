@@ -31,6 +31,11 @@ class Permission extends Model
     public const CATEGORIES_UPDATE = 'categories.update';
     public const CATEGORIES_DELETE = 'categories.delete';
 
+    public const ESTABLISHMENTS_VIEW = 'establishments.view';
+    public const ESTABLISHMENTS_CREATE = 'establishments.create';
+    public const ESTABLISHMENTS_UPDATE = 'establishments.update';
+    public const ESTABLISHMENTS_DELETE = 'establishments.delete';
+
     public const SUPPORT_USERS_VIEW   = 'support-users.view';
     public const SUPPORT_USERS_CREATE = 'support-users.create';
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
@@ -127,6 +132,30 @@ class Permission extends Model
                 'group' => 'categories',
                 'group_label' => 'Categorias',
                 'description' => 'Permite excluir categorias que não estejam em uso.',
+            ],
+            self::ESTABLISHMENTS_VIEW => [
+                'name' => 'Visualizar estabelecimentos',
+                'group' => 'establishments',
+                'group_label' => 'Estabelecimentos',
+                'description' => 'Permite consultar os estabelecimentos parceiros da plataforma.',
+            ],
+            self::ESTABLISHMENTS_CREATE => [
+                'name' => 'Criar estabelecimentos',
+                'group' => 'establishments',
+                'group_label' => 'Estabelecimentos',
+                'description' => 'Permite cadastrar novos estabelecimentos parceiros.',
+            ],
+            self::ESTABLISHMENTS_UPDATE => [
+                'name' => 'Editar estabelecimentos',
+                'group' => 'establishments',
+                'group_label' => 'Estabelecimentos',
+                'description' => 'Permite alterar os dados e o status dos estabelecimentos.',
+            ],
+            self::ESTABLISHMENTS_DELETE => [
+                'name' => 'Excluir estabelecimentos',
+                'group' => 'establishments',
+                'group_label' => 'Estabelecimentos',
+                'description' => 'Permite excluir estabelecimentos parceiros.',
             ],
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',

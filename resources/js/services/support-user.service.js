@@ -65,4 +65,31 @@ export default {
 
         return response.data;
     },
+
+    /**
+     * Busca o catálogo e as permissões atuais do usuário suporte.
+     *
+     * @param {Number} id Identificador do usuário suporte.
+     * @returns {Promise<{data: {catalog: Object, selected: string[], user: Object}}>}
+     */
+    async permissions(id) {
+        const response = await axios.get(`${API_URL}/support-users/${id}/permissions`);
+
+        return response.data;
+    },
+
+    /**
+     * Atualiza as permissões do usuário suporte.
+     *
+     * @param {Number} id Identificador do usuário suporte.
+     * @param {Array<string>} permissions Slugs selecionados.
+     * @returns {Promise<{message: string, user: Object}>}
+     */
+    async updatePermissions(id, permissions) {
+        const response = await axios.put(`${API_URL}/support-users/${id}/permissions`, {
+            permissions,
+        });
+
+        return response.data;
+    },
 }

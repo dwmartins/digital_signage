@@ -58,6 +58,7 @@ const tableSkeletonColumns = [
 
 const canCreateSupportUser = computed(() => authStore.hasPermission('support-users.create'));
 const canUpdateSupportUser = computed(() => authStore.hasPermission('support-users.update'));
+const canManageSupportUserPermissions = computed(() => authStore.hasPermission('support-users.permissions.update'));
 const canDeleteSupportUser = computed(() => authStore.hasPermission('support-users.delete'));
 
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
@@ -126,7 +127,7 @@ const statusSeverity = (status) => {
 };
 
 const openPermissionsPage = (data) => {
-    if (!canUpdateSupportUser.value) {
+    if (!canManageSupportUserPermissions.value) {
         return showAlert('warning', 'Você não possui permissão para configurar permissões.');
     }
 
@@ -313,8 +314,8 @@ const onCloseDialog = async () => {
                                     icon="pi pi-key"
                                     variant="text"
                                     rounded
-                                    :disabled="!canUpdateSupportUser"
-                                    v-tooltip.left="!canUpdateSupportUser ? 'Você não possui permissão para configurar permissões.' : 'Configurar permissões'"
+                                    :disabled="!canManageSupportUserPermissions"
+                                    v-tooltip.left="!canManageSupportUserPermissions ? 'Você não possui permissão para configurar permissões.' : 'Configurar permissões'"
                                     @click="openPermissionsPage(data)"
                                 />
 

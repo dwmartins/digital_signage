@@ -4,11 +4,12 @@ namespace App\Domains\User\Controllers;
 
 use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Audit\Services\AuditLogger;
+use App\Domains\Permission\Models\Permission;
 use App\Domains\User\Models\User;
 use App\Domains\User\Requests\SupportUserRequest;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SupportUserController extends Controller
@@ -95,7 +96,7 @@ class SupportUserController extends Controller
 
         return response()->json([
             'message' => 'Usuário suporte criado com sucesso.',
-            'user' => $user
+            'user' => $user,
         ], 201);
     }
 
@@ -143,6 +144,82 @@ class SupportUserController extends Controller
         return response()->json([
             'message' => 'Usuário suporte atualizado com sucesso.',
             'user' => $user,
+        ]);
+    }
+
+    /**
+     * Retorna o catálogo de permissões e as permissões atuais do usuário suporte.
+     */
+    public function permissions(int $id): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = User::query()
+            ->where('role', User::ROLE_SUPPORT)
+            ->with('permissions:id,slug')
+            ->find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Usuário suporte não encontrado.',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'catalog' => Permission::platformCatalog(),
+                'selected' => $user->permissions->pluck('slug')->values(),
+                'user' => $user,
+            ],
+        ]);
+    }
+
+    /**
+     * Atualiza as permissões individuais de um usuário suporte.
+     */
+    public function updatePermissions(Request $request, int $id): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = User::query()
+            ->where('role', User::ROLE_SUPPORT)
+            ->find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Usuário suporte não encontrado.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'permissions' => ['present', 'array'],
+            'permissions.*' => ['string', 'distinct', Rule::in(Permission::catalogSlugs())],
+        ]);
+
+        $oldPermissions = $user->permissions()
+            ->pluck('slug')
+            ->values()
+            ->all();
+
+        $user->permissions()->sync(Permission::idsForSlugs($validated['permissions']));
+        $user->forgetPermissionCache();
+
+        $newPermissions = $user->permissions()
+            ->pluck('slug')
+            ->values()
+            ->all();
+
+        AuditLogger::record(
+            module: AuditLog::MODULE_SUPPORT_USERS,
+            action: AuditLog::ACTION_PERMISSIONS_UPDATED,
+            description: "Permissões do usuário suporte {$user->full_name} atualizadas.",
+            auditable: $user,
+            oldValues: ['permissions' => $oldPermissions],
+            newValues: ['permissions' => $newPermissions],
+            request: $request,
+        );
+
+        return response()->json([
+            'message' => 'Permissões atualizadas com sucesso.',
+            'user' => $user->loadCount('permissions'),
         ]);
     }
 

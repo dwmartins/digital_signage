@@ -68,7 +68,7 @@ export default {
     dashboardRoute() {
         const authStore = useAuthStore();
 
-        if (authStore.isAdmin()) {
+        if (authStore.isPlatformUser()) {
             return { name: 'platform.dashboard' };
         }
 

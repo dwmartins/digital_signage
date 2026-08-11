@@ -64,3 +64,25 @@ it('nega permissões internas ao cliente e ao usuário inativo', function () {
     $this->actingAs($customer)->getJson('/api/test/permission')->assertForbidden();
     $this->actingAs($inactiveAdmin)->getJson('/api/test/permission')->assertForbidden();
 });
+
+it('exige permissão específica para administrar permissões de outros suportes', function () {
+    $support = platformUser(User::ROLE_SUPPORT);
+    $target = platformUser(User::ROLE_SUPPORT);
+    $permission = Permission::query()->create([
+        'name' => 'Gerenciar permissões de usuários suporte',
+        'slug' => Permission::SUPPORT_USERS_PERMISSIONS_UPDATE,
+        'group' => 'users-support',
+    ]);
+
+    $this->actingAs($support)
+        ->getJson("/api/support-users/{$target->id}/permissions")
+        ->assertForbidden();
+
+    $support->permissions()->attach($permission);
+    $support->forgetPermissionCache();
+
+    $this->actingAs($support)
+        ->getJson("/api/support-users/{$target->id}/permissions")
+        ->assertOk()
+        ->assertJsonPath('data.user.id', $target->id);
+});

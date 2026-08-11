@@ -41,6 +41,7 @@ class AuditLog extends Model
     public const ACTION_LOGOUT = 'Logout';
     public const ACTION_PASSWORD_UPDATED = 'Senha alterada';
     public const ACTION_AVATAR_UPDATED = 'Avatar alterado';
+    public const ACTION_PERMISSIONS_UPDATED = 'Permissões alteradas';
 
     /**
      * Retorna os módulos disponíveis para filtros e exibição no front.
@@ -76,6 +77,7 @@ class AuditLog extends Model
             ['label' => self::ACTION_LOGOUT, 'value' => self::ACTION_LOGOUT],
             ['label' => self::ACTION_PASSWORD_UPDATED, 'value' => self::ACTION_PASSWORD_UPDATED],
             ['label' => self::ACTION_AVATAR_UPDATED, 'value' => self::ACTION_AVATAR_UPDATED],
+            ['label' => self::ACTION_PERMISSIONS_UPDATED, 'value' => self::ACTION_PERMISSIONS_UPDATED],
         ];
     }
 

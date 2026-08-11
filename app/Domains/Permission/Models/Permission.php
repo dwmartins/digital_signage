@@ -29,6 +29,7 @@ class Permission extends Model
     public const SUPPORT_USERS_VIEW   = 'support-users.view';
     public const SUPPORT_USERS_CREATE = 'support-users.create';
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
+    public const SUPPORT_USERS_PERMISSIONS_UPDATE = 'support-users.permissions.update';
     public const SUPPORT_USERS_DELETE = 'support-users.delete';
 
     /**
@@ -53,6 +54,20 @@ class Permission extends Model
     }
 
     /**
+     * Retorna os IDs correspondentes aos slugs válidos informados.
+     *
+     * @param  array<int, string>  $slugs
+     * @return array<int, int>
+     */
+    public static function idsForSlugs(array $slugs): array
+    {
+        return self::query()
+            ->whereIn('slug', array_intersect($slugs, self::catalogSlugs()))
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
      * Catálogo de permissões internas da plataforma.
      *
      * @return array<string, array{name: string, group: string, group_label: string, description: string}>
@@ -60,7 +75,7 @@ class Permission extends Model
     public static function platformCatalog(): array
     {
         return [
-            self::CUSTOMERS_VIEW   => [
+            self::CUSTOMERS_VIEW => [
                 'name' => 'Visualizar empresas',
                 'group' => 'customers',
                 'group_label' => 'Empresas',
@@ -84,10 +99,7 @@ class Permission extends Model
                 'group_label' => 'Empresas',
                 'description' => 'Permite remover empresas cadastradas da plataforma.',
             ],
-            /** 
-             * 
-            */
-            self::SUPPORT_USERS_VIEW   => [
+            self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',
                 'group' => 'users-support',
                 'group_label' => 'Usuários suporte',
@@ -103,7 +115,13 @@ class Permission extends Model
                 'name' => 'Editar usuários suporte',
                 'group' => 'users-support',
                 'group_label' => 'Usuários suporte',
-                'description' => 'Permite alterar cadastro, status e permissões de usuários internos de suporte.',
+                'description' => 'Permite alterar os dados cadastrais e o status de usuários internos de suporte.',
+            ],
+            self::SUPPORT_USERS_PERMISSIONS_UPDATE => [
+                'name' => 'Gerenciar permissões de usuários suporte',
+                'group' => 'users-support',
+                'group_label' => 'Usuários suporte',
+                'description' => 'Permite visualizar e alterar as permissões atribuídas a outros usuários internos de suporte.',
             ],
             self::SUPPORT_USERS_DELETE => [
                 'name' => 'Excluir usuários suporte',

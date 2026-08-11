@@ -198,6 +198,11 @@ return [
         'email' => 'E-mail',
         'global' => 'busca',
         'is_active' => 'ativo',
+        'name' => 'Nome',
+        'phone' => 'Telefone',
         'last_name' => 'sobrenome',
+        'audit_logs_enabled' => 'Auditoria',
+        'status' => 'Status',
+        'password' => 'Senha'
     ],
 ];

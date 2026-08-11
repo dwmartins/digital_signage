@@ -9,4 +9,10 @@ Route::middleware(['auth:sanctum'])->group(function() {
     
     Route::post('/support-users', [SupportUserController::class, 'store'])
         ->middleware(['platform:support-users.create']);
+
+    Route::put('/support-users/{id}', [SupportUserController::class, 'update'])
+        ->middleware(['platform:support-users.update']);
+
+    Route::delete('/support-users/{id}', [SupportUserController::class, 'destroy'])
+        ->middleware(['platform:support-users.delete']);
 });

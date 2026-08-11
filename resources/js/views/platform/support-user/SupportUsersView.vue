@@ -1,9 +1,11 @@
 <script setup>
+import SupportUserFormDialog from '@/components/dialog/support-user/SupportUserFormDialog.vue';
 import Breadcrumb from '@/components/shared/Breadcrumb.vue';
 import EmptyData from '@/components/shared/EmptyData.vue';
 import TableSkeleton from '@/components/shared/TableSkeleton.vue';
 import { useQueryFilters } from '@/composables/useQueryFilters';
 import { showAlert } from '@/helpers/alert';
+import { formatDate } from '@/helpers/date';
 import { copyItem } from '@/helpers/functions';
 import supportUserService from '@/services/support-user.service';
 import { useAuthStore } from '@/stores/authStore';
@@ -168,6 +170,7 @@ const onCloseDialog = async () => {
                 size="small"
                 :disabled="!canCreateSupportUser"
                 v-tooltip.bottom="!canCreateSupportUser ? 'Você não possui permissão para criar usuários suporte.' : null"
+                @click="openDialog('form')"
             />
         </div>
 
@@ -327,7 +330,7 @@ const onCloseDialog = async () => {
                         </template>
                     </Column>
                 </DataTable>
-                
+
                 <EmptyData
                     v-if="!loading && !supportUsers.length"
                     @clean-filters="onClearSearch"
@@ -335,6 +338,12 @@ const onCloseDialog = async () => {
                 />
             </template>
         </Card>
+
+        <SupportUserFormDialog
+            v-model="dialogVisible.form"
+            :support-user="supportUser"
+            @saved="onCloseDialog"
+        />
     </section>
 </template>
 <style scoped>

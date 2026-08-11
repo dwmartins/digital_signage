@@ -29,4 +29,28 @@ export default {
 
         return response.data;
     },
+
+    /**
+     * Cria um usuário suporte.
+     *
+     * @param {Object} data Dados do formulário de usuário suporte.
+     * @returns {Promise<{message: string, user: Object}>}
+     */
+    async create(data) {
+        const response = await axios.post(`${API_URL}/support-users`, data);
+
+        return response.data;
+    },
+
+    /**
+     * Atualiza um usuário suporte.
+     *
+     * @param {Object} data Dados do usuário suporte, incluindo o id.
+     * @returns {Promise<{message: string, user: Object}>}
+     */
+    async update(data) {
+        const response = await axios.put(`${API_URL}/support-users/${data.id}`, data);
+
+        return response.data;
+    },
 }

@@ -44,6 +44,7 @@ class SupportUserRequest extends FormRequest
                 User::STATUS_BLOCKED,
             ])],
             'password' => $passwordRules,
+            'audit_logs_enabled' => ['required', 'boolean']
         ];
     }
 

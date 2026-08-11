@@ -98,4 +98,51 @@ class SupportUserController extends Controller
             'user' => $user
         ], 201);
     }
+
+    /**
+     * Atualiza os dados cadastrais de um usuário suporte.
+     *
+     * @param SupportUserRequest $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function update(SupportUserRequest $request, int $id): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = User::query()
+            ->where('role', User::ROLE_SUPPORT)
+            ->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Usuário suporte não encontrado.',
+            ], 404);
+        }
+
+        $data = $request->validated();
+
+        if (empty($data['password'])) {
+            unset($data['password']);
+        }
+
+        $auditFields = array_diff(array_keys($data), ['password']);
+        $oldValues = $user->only($auditFields);
+
+        $user->update($data);
+
+        AuditLogger::record(
+            module: AuditLog::MODULE_SUPPORT_USERS,
+            action: AuditLog::ACTION_UPDATED,
+            description: "Usuário suporte {$user->full_name} atualizado.",
+            auditable: $user,
+            oldValues: $oldValues,
+            newValues: $user->only($auditFields),
+            request: $request,
+        );
+
+        return response()->json([
+            'message' => 'Usuário suporte atualizado com sucesso.',
+            'user' => $user,
+        ]);
+    }
 }

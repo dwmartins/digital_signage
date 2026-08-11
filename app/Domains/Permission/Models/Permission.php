@@ -76,28 +76,28 @@ class Permission extends Model
     {
         return [
             self::CUSTOMERS_VIEW => [
-                'name' => 'Visualizar empresas',
+                'name' => 'Visualizar clientes anunciantes',
                 'group' => 'customers',
-                'group_label' => 'Empresas',
-                'description' => 'Permite consultar a lista de empresas cadastradas, seus dados principais e informações relacionadas.',
+                'group_label' => 'Clientes anunciantes',
+                'description' => 'Permite consultar os usuários anunciantes cadastrados na plataforma.',
             ],
             self::CUSTOMERS_CREATE => [
-                'name' => 'Criar empresas',
+                'name' => 'Criar clientes anunciantes',
                 'group' => 'customers',
-                'group_label' => 'Empresas',
-                'description' => 'Permite cadastrar novas empresas clientes na plataforma.',
+                'group_label' => 'Clientes anunciantes',
+                'description' => 'Permite cadastrar novos usuários anunciantes na plataforma.',
             ],
             self::CUSTOMERS_UPDATE => [
-                'name' => 'Editar empresas',
+                'name' => 'Editar clientes anunciantes',
                 'group' => 'customers',
-                'group_label' => 'Empresas',
-                'description' => 'Permite alterar dados cadastrais, contatos e status das empresas existentes.',
+                'group_label' => 'Clientes anunciantes',
+                'description' => 'Permite alterar dados cadastrais, contatos e status dos usuários anunciantes.',
             ],
             self::CUSTOMERS_DELETE => [
-                'name' => 'Excluir empresas',
+                'name' => 'Excluir clientes anunciantes',
                 'group' => 'customers',
-                'group_label' => 'Empresas',
-                'description' => 'Permite remover empresas cadastradas da plataforma.',
+                'group_label' => 'Clientes anunciantes',
+                'description' => 'Permite excluir usuários anunciantes da plataforma.',
             ],
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',

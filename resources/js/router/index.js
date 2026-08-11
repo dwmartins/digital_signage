@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { pageLoadingStore } from "@/stores/pageLoadingStore";
 import { createRouter, createWebHistory } from "vue-router";
 import platformRoutes from './platform';
+import customerRoutes from './customer';
 
 const loginView = () => import("@/views/auth/LoginView.vue");
 const NotFoundView = () => import('@/views/NotFoundView.vue'); 
@@ -19,6 +20,7 @@ const routes = [
         component: loginView
     },
     ...platformRoutes,
+    ...customerRoutes,
     {
         path: '/:pathMatch(.*)*',
         name: 'not-found-view',
@@ -103,6 +105,10 @@ async function validateSession() {
 
 function canAccessRoute(to, auth) {
     if(to.meta.requiresPlatformUser && !auth.isPlatformUser()) {
+        return false;
+    }
+
+    if(to.meta.requiresCustomerUser && !auth.isCustomer()) {
         return false;
     }
 

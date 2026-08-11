@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AuditLog extends Model
 {
     public const MODULE_AUTH = 'auth';
-    public const MODULE_COMPANIES = 'companies';
+    public const MODULE_CUSTOMERS = 'customers';
     public const MODULE_PLANS = 'plans';
     public const MODULE_PROFILE = 'profile';
     public const MODULE_SUPPORT_USERS = 'support_users';
@@ -52,7 +52,7 @@ class AuditLog extends Model
     {
         return [
             ['label' => 'Autenticação', 'value' => self::MODULE_AUTH],
-            ['label' => 'Empresas', 'value' => self::MODULE_COMPANIES],
+            ['label' => 'Clientes anunciantes', 'value' => self::MODULE_CUSTOMERS],
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],

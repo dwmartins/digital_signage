@@ -49,7 +49,7 @@ const visible = computed({
 
 const isUpdate = computed(() => !!props.supportUser?.id);
 
-const canManageAudit = computed(() => authStore.hasPermission('companies.audit.update'));
+const canManageAudit = computed(() => authStore.hasPermission('customers.audit.update'));
 
 const resetForm = () => {
     Object.assign(form, getDefaultSupportUser());

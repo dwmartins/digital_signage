@@ -72,7 +72,7 @@ export default {
             return { name: 'platform.dashboard' };
         }
 
-        return { name: 'company.dashboard' };
+        return { name: 'customer.dashboard' };
     },
 
     /**

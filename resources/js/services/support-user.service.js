@@ -53,4 +53,16 @@ export default {
 
         return response.data;
     },
+
+    /**
+     * Exclui um usuário suporte.
+     *
+     * @param {Number} id Identificador do usuário suporte.
+     * @returns {Promise<{message: string}>}
+     */
+    async destroy(id) {
+        const response = await axios.delete(`${API_URL}/support-users/${id}`);
+
+        return response.data;
+    },
 }

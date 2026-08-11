@@ -145,4 +145,38 @@ class SupportUserController extends Controller
             'user' => $user,
         ]);
     }
+
+    /**
+     * Remove um usuário suporte da plataforma.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = User::query()
+            ->where('role', User::ROLE_SUPPORT)
+            ->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Usuário suporte não encontrado.',
+            ], 404);
+        }
+
+        AuditLogger::record(
+            module: AuditLog::MODULE_SUPPORT_USERS,
+            action: AuditLog::ACTION_DELETED,
+            description: "Usuário suporte {$user->full_name} excluído.",
+            auditable: $user,
+            oldValues: $user->toArray(),
+        );
+
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Usuário suporte excluído com sucesso.',
+        ]);
+    }
 }

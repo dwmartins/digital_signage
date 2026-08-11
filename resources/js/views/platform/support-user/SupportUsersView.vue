@@ -1,4 +1,5 @@
 <script setup>
+import SupportUserDeleteDialog from '@/components/dialog/support-user/SupportUserDeleteDialog.vue';
 import SupportUserFormDialog from '@/components/dialog/support-user/SupportUserFormDialog.vue';
 import Breadcrumb from '@/components/shared/Breadcrumb.vue';
 import EmptyData from '@/components/shared/EmptyData.vue';
@@ -343,6 +344,12 @@ const onCloseDialog = async () => {
             v-model="dialogVisible.form"
             :support-user="supportUser"
             @saved="onCloseDialog"
+        />
+
+        <SupportUserDeleteDialog
+            v-model="dialogVisible.delete"
+            :support-user="supportUser"
+            @deleted="onCloseDialog"
         />
     </section>
 </template>

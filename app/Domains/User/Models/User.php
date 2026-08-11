@@ -6,10 +6,12 @@ namespace App\Domains\User\Models;
 
 use App\Domains\Appearance\Models\UserAppearanceSetting;
 use App\Domains\Permission\Models\Permission;
+use App\Domains\User\Observers\UserObserver;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -33,6 +35,7 @@ use Laravel\Sanctum\HasApiTokens;
 ])]
 #[Hidden(['password', 'remember_token'])]
 #[Appends(['full_name', 'avatar_url', 'appearance_settings'])]
+#[ObservedBy([UserObserver::class])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

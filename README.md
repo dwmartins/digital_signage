@@ -1,414 +1,312 @@
 # Digital Signage — Plataforma de Publicidade em TVs
 
-Sistema de gerenciamento de publicidade digital para exibição de anúncios em TVs instaladas em estabelecimentos parceiros.
+Plataforma para gerenciamento e exibição de publicidade digital em TVs instaladas em estabelecimentos parceiros.
 
-A solução será dividida em dois componentes principais:
+O projeto será dividido em **dois sistemas principais**:
 
-1. **Plataforma Central** — painel administrativo e API para gerenciamento de clientes, estabelecimentos, telas, campanhas, mídias, playlists, agendamentos, relatórios e dispositivos.
-2. **TV Player / Signage Agent** — software instalado em um PC ou mini PC com Linux conectado à TV, responsável por sincronizar conteúdo, armazenar vídeos localmente, reproduzir anúncios e reportar o funcionamento ao servidor.
+1. **Digital Signage Server**
+   - Laravel
+   - Vue 3
+   - PrimeVue
+   - MySQL
+   - Painel administrativo
+   - Portal dos clientes
+   - API central consumida pelos dispositivos
+   - Campanhas, mídias, telas, relatórios, usuários e permissões
+
+2. **Digital Signage Device**
+   - Node.js
+   - Linux
+   - Chromium em modo kiosk
+   - API/serviço local
+   - Sincronização com o Laravel
+   - Download e cache das mídias
+   - Reprodução local
+   - Heartbeat
+   - Logs
+   - Funcionamento offline
 
 ---
 
-# 1. Visão Geral
+# 1. Objetivo
 
-A plataforma permitirá criar uma rede própria de TVs publicitárias distribuídas em estabelecimentos como:
+Criar uma plataforma própria de Digital Signage / DOOH para instalar TVs em estabelecimentos com circulação ou permanência de pessoas e vender espaços publicitários para empresas.
 
-- Academias
-- Barbearias
-- Clínicas
-- Consultórios
-- Mercados
-- Restaurantes
-- Salões
-- Oficinas
-- Lojas
-- Recepções
-- Outros locais com fluxo ou permanência de pessoas
+A plataforma deverá permitir:
 
-Cada estabelecimento poderá possuir uma ou mais telas.
-
-Os anunciantes poderão contratar campanhas para aparecer em telas específicas, grupos de telas, regiões ou toda a rede.
+- administrar estabelecimentos parceiros;
+- administrar TVs e dispositivos;
+- cadastrar clientes anunciantes;
+- criar campanhas;
+- enviar vídeos e imagens;
+- aprovar conteúdos;
+- vincular campanhas a clientes;
+- definir onde e quando cada campanha será exibida;
+- acompanhar dispositivos online e offline;
+- registrar exibições;
+- gerar relatórios;
+- permitir futuramente que o próprio cliente envie e atualize seus conteúdos;
+- manter a reprodução funcionando mesmo sem internet.
 
 ---
 
 # 2. Arquitetura Geral
 
 ```text
-                    ┌─────────────────────────┐
-                    │      Painel Web         │
-                    │       Vue 3             │
-                    └────────────┬────────────┘
-                                 │
-                                 ▼
-                    ┌─────────────────────────┐
-                    │       API Node.js       │
-                    │   Fastify / Express     │
-                    └───────┬─────────┬───────┘
-                            │         │
-                            │         └─────────────┐
-                            ▼                       ▼
-                     PostgreSQL               S3 / R2
-                                                 │
-                                                 │ mídias
-                 ┌───────────────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-        ▼                 ▼
-  PC Linux / TV 01   PC Linux / TV 02
-        │                 │
-        ▼                 ▼
-     Player            Player
-        │                 │
-        ▼                 ▼
-       TV                TV
+                         SERVIDOR CENTRAL
+
+                Laravel + Vue 3 + PrimeVue
+             ┌──────────────────────────────┐
+             │                              │
+             │ Dashboard                    │
+             │ Usuários                     │
+             │ Suporte e permissões         │
+             │ Clientes                     │
+             │ Campanhas                    │
+             │ Mídias                       │
+             │ Aprovação de conteúdo        │
+             │ Estabelecimentos             │
+             │ Telas                        │
+             │ Dispositivos                 │
+             │ Playlists                    │
+             │ Monitoramento                │
+             │ Relatórios                   │
+             │ Auditoria                    │
+             │                              │
+             └───────────────┬──────────────┘
+                             │
+                             │ API HTTPS / JSON
+                             │
+═════════════════════════════╪══════════════════════════════
+                             │
+                             ▼
+
+                     PC DO ESTABELECIMENTO
+
+                      Node.js Agent
+               ┌────────────────────────┐
+               │ autenticação device    │
+               │ sincronização          │
+               │ download               │
+               │ cache local            │
+               │ heartbeat              │
+               │ logs                   │
+               │ watchdog               │
+               │ eventos de reprodução  │
+               │ API local              │
+               └────────────┬───────────┘
+                            │
+                            ▼
+                       Player local
+                            │
+                            ▼
+                    Chromium --kiosk
+                            │
+                           HDMI
+                            │
+                            ▼
+                            TV
 ```
 
 ---
 
-# 3. Stack Sugerida
+# 3. Repositórios
 
-## Backend
+## 3.1 Digital Signage Server
 
-- Node.js
-- Fastify ou Express
-- JavaScript ou TypeScript
-- PostgreSQL
-- Prisma, Sequelize ou SQL puro
-- Redis opcional
-- JWT apenas para APIs externas, se necessário
-- Sessão/cookie para painel administrativo, quando aplicável
+```text
+digital-signage/
+```
 
-## Frontend administrativo
+Responsável por painel administrativo, portal do cliente, API central, autenticação, autorização, banco de dados, campanhas, mídias, dispositivos, relatórios, auditoria e regras de negócio.
 
-- Vue 3
-- Vite
-- PrimeVue
-- Pinia
-- Vue Router
+Stack:
 
-## Armazenamento
+```text
+Laravel
+Vue 3
+PrimeVue
+Pinia
+Vue Router
+Sanctum
+MySQL
+Vite
+```
 
-- Cloudflare R2
-- Amazon S3
-- MinIO em desenvolvimento
+## 3.2 Digital Signage Device
 
-## Software da TV
+```text
+digital-signage-device/
+```
 
-- Linux
-- Node.js
-- Chromium
-- HTML5 Video
-- systemd
-- armazenamento local em SSD
+Responsável pelo computador conectado à TV.
 
-## Infraestrutura
+Stack:
 
-- Docker para servidor
-- Nginx
-- HTTPS
-- CI/CD
-- Logs centralizados
-- Backup do banco
+```text
+Node.js
+Linux
+Chromium
+SQLite ou arquivos locais
+systemd
+HTML5 Video
+```
 
 ---
 
-# 4. Componentes do Sistema
+# 4. Perfis de Usuário
 
-## 4.1 Plataforma Central
+## 4.1 Admin
 
-Responsável por:
+Administrador da plataforma.
 
-- usuários
-- clientes
-- anunciantes
-- estabelecimentos
-- telas
-- dispositivos
-- campanhas
-- vídeos
-- playlists
-- agendamentos
-- regras de frequência
-- relatórios
-- monitoramento
-- financeiro
-- contratos
-- auditoria
+Pode:
 
-## 4.2 Signage Agent
+- visualizar toda a plataforma;
+- cadastrar usuários internos;
+- cadastrar suportes;
+- administrar permissões;
+- cadastrar clientes;
+- administrar estabelecimentos;
+- administrar dispositivos;
+- criar campanhas;
+- aprovar ou reprovar mídias;
+- alterar campanhas;
+- visualizar relatórios;
+- visualizar logs de auditoria;
+- administrar configurações da plataforma.
 
-Responsável por:
+## 4.2 Suporte
 
-- autenticar o dispositivo
-- consultar configurações
-- sincronizar playlists
-- baixar mídias
-- validar arquivos
-- armazenar conteúdo localmente
-- remover arquivos antigos
-- iniciar o player
-- monitorar o player
-- enviar heartbeat
-- registrar reproduções
-- funcionar offline
-- recuperar-se após falhas
+Usuário interno da plataforma com acesso controlado por permissões.
 
-## 4.3 Player
+Exemplos:
 
-Responsável apenas pela apresentação do conteúdo:
+```text
+dashboard.view
+users.view
+users.create
+users.update
+users.disable
+clients.view
+clients.create
+clients.update
+campaigns.view
+campaigns.create
+campaigns.update
+campaigns.approve
+media.view
+media.approve
+media.reject
+establishments.view
+establishments.create
+establishments.update
+screens.view
+screens.update
+devices.view
+devices.manage
+reports.view
+audit.view
+```
 
-- reproduzir vídeos
-- reproduzir imagens
-- alternar conteúdos
-- respeitar duração
-- respeitar playlist
-- operar em tela cheia
-- esconder cursor
-- evitar interrupções visuais
-- informar ao Agent o início/fim das reproduções
+## 4.3 Cliente
 
----
+Empresa/anunciante que compra publicidade.
 
-# 5. Requisitos da Plataforma Central
+Futuramente poderá:
 
-# 5.1 Autenticação
+- visualizar suas campanhas;
+- visualizar seus vídeos e imagens;
+- enviar novas mídias;
+- solicitar alteração de conteúdo;
+- acompanhar status de aprovação;
+- visualizar locais de exibição;
+- visualizar exibições e relatórios;
+- alterar dados básicos da conta.
 
-O sistema deverá possuir autenticação para operadores.
-
-Requisitos:
-
-- login
-- logout
-- recuperação de senha
-- alteração de senha
-- bloqueio de usuário
-- controle de sessões
-- autenticação em dois fatores futuramente
-- proteção contra brute force
+O cliente não poderá publicar diretamente na TV sem aprovação, salvo futura permissão específica.
 
 ---
 
-# 5.2 Usuários e Papéis
+# 5. Usuários Internos
 
-Papéis iniciais:
+Área:
 
-### Administrador
-
-Acesso completo.
-
-### Operador
-
-Pode administrar conteúdo e campanhas.
-
-### Comercial
-
-Pode administrar anunciantes, propostas e contratos.
-
-### Financeiro
-
-Pode administrar cobranças e pagamentos.
-
-### Cliente/Anunciante
-
-Futuramente poderá visualizar suas campanhas e relatórios.
-
----
-
-# 5.3 Estabelecimentos Parceiros
+```text
+Admin / Suporte
+→ Usuários
+```
 
 Campos sugeridos:
 
 ```text
 id
 name
-legal_name
-document
-phone
+last_name
 email
-address
-number
-complement
-neighborhood
-city
-state
-zip_code
-latitude
-longitude
-contact_name
-status
-opening_hours
-notes
+phone
+password
+role
+is_active
+avatar
+last_login_at
+last_login_ip
 created_at
 updated_at
 ```
 
-O estabelecimento deverá possuir:
+Funcionalidades:
 
-- responsável
-- endereço
-- contrato
-- valor mensal pago pelo espaço
-- porcentagem/espaço reservado para conteúdo próprio
-- categorias concorrentes bloqueadas
-- horário de funcionamento
-- quantidade de telas
-
----
-
-# 5.4 Contrato do Estabelecimento
-
-Registrar:
-
-```text
-establishment_id
-start_date
-end_date
-monthly_payment
-payment_day
-free_ad_slots
-revenue_share
-status
-notes
-```
-
-Possíveis modelos:
-
-### Aluguel fixo
-
-Exemplo:
-
-```text
-R$ 200/mês
-```
-
-### Aluguel reduzido + publicidade gratuita
-
-Exemplo:
-
-```text
-R$ 100/mês
-+
-20% da programação para o estabelecimento
-```
-
-### Apenas publicidade gratuita
-
-Exemplo:
-
-```text
-R$ 0/mês
-+
-espaço gratuito de divulgação
-```
+- listar;
+- buscar;
+- cadastrar;
+- editar;
+- ativar;
+- desativar;
+- redefinir senha;
+- visualizar último acesso;
+- atribuir permissões;
+- visualizar histórico.
 
 ---
 
-# 5.5 Telas
+# 6. Permissões
 
-Uma localização poderá ter várias telas.
-
-Campos:
+Área:
 
 ```text
-id
-establishment_id
+Admin
+→ Permissões
+```
+
+Estrutura sugerida:
+
+```text
+permissions
+roles
+role_permissions
+user_permissions
+```
+
+Cada permissão:
+
+```text
+slug
 name
+group
 description
-orientation
-resolution
-status
-location_description
-created_at
-updated_at
-```
-
-Exemplo:
-
-```text
-Academia Strong
-└── TV Recepção
-└── TV Área de Cardio
 ```
 
 ---
 
-# 5.6 Dispositivos
+# 7. Clientes
 
-Cada PC Linux será tratado como um dispositivo.
-
-Campos:
+Área interna:
 
 ```text
-id
-screen_id
-device_code
-device_secret_hash
-hostname
-mac_address
-ip_address
-os_version
-agent_version
-player_version
-last_seen_at
-last_ip
-storage_total
-storage_free
-status
-registered_at
-created_at
-updated_at
+Admin / Suporte
+→ Clientes
 ```
-
-Estados possíveis:
-
-```text
-pending
-online
-offline
-maintenance
-disabled
-```
-
----
-
-# 5.7 Provisionamento
-
-Um dispositivo novo deverá poder ser associado sem configuração manual complexa.
-
-Fluxo desejado:
-
-```text
-Linux inicia
-↓
-Signage Agent inicia
-↓
-Solicita registro
-↓
-Servidor fornece código
-↓
-TV mostra:
-
-DEVICE CODE
-8HK-38F
-
-↓
-Administrador abre painel
-↓
-Seleciona estabelecimento/tela
-↓
-Informa 8HK-38F
-↓
-Servidor associa dispositivo
-↓
-Agent recebe credenciais
-↓
-Sincronização começa
-```
-
----
-
-# 5.8 Anunciantes
 
 Campos:
 
@@ -429,383 +327,652 @@ created_at
 updated_at
 ```
 
----
-
-# 5.9 Categorias
-
-Exemplos:
+Status:
 
 ```text
-Academia
-Restaurante
-Pizzaria
-Dentista
-Imobiliária
-Barbearia
-Mercado
-Farmácia
-Clínica
-Loja de roupas
+active
+inactive
+blocked
 ```
-
-As categorias serão importantes para evitar concorrência.
-
-Exemplo:
-
-```text
-Estabelecimento:
-Academia Strong
-
-Categoria bloqueada:
-Academias
-```
-
-Nenhuma campanha de outra academia será exibida nessa localização.
 
 ---
 
-# 5.10 Mídias
+# 8. Usuários dos Clientes
 
-Suporte inicial:
+Um cliente poderá possuir um ou mais usuários.
 
-- vídeo MP4
-- imagem JPEG
-- imagem PNG
-- imagem WebP
+```text
+Cliente
+├── Usuário 1
+├── Usuário 2
+└── Usuário 3
+```
 
-Futuramente:
+O usuário representa a conta de acesso; o cliente representa a empresa anunciante.
 
-- HTML
-- páginas web
-- feeds
-- widgets
-- notícias
-- previsão do tempo
-- QR Codes dinâmicos
+---
+
+# 9. Portal do Cliente
+
+Área futura:
+
+```text
+/app/cliente
+```
+
+Views:
+
+```text
+Dashboard
+Minhas campanhas
+Minhas mídias
+Enviar conteúdo
+Solicitações
+Relatórios
+Minha empresa
+Meu perfil
+```
+
+---
+
+# 10. Dashboard Administrativo
+
+View:
+
+```text
+/app/admin
+```
+
+Cards:
+
+```text
+Estabelecimentos ativos
+Telas instaladas
+Telas online
+Telas offline
+Clientes ativos
+Campanhas ativas
+Campanhas aguardando aprovação
+Mídias aguardando aprovação
+Exibições hoje
+```
+
+Também mostrar:
+
+- TVs offline;
+- dispositivos com pouco espaço;
+- dispositivos desatualizados;
+- campanhas próximas do fim;
+- conteúdos aguardando aprovação;
+- erros recentes;
+- últimas ações administrativas.
+
+---
+
+# 11. Dashboard do Cliente
+
+Cards:
+
+```text
+Campanhas ativas
+Campanhas em análise
+Campanhas finalizadas
+Mídias enviadas
+Exibições hoje
+Exibições no mês
+```
+
+Também mostrar últimos uploads, rejeições, locais de exibição e gráficos.
+
+---
+
+# 12. Campanhas
+
+Cada campanha pertence obrigatoriamente a um cliente.
+
+```text
+Client
+└── Campaigns
+```
 
 Campos:
 
 ```text
 id
-advertiser_id
+client_id
 name
-type
-file_url
-file_size
-duration
-width
-height
-codec
-checksum
-status
-created_at
-updated_at
-```
-
----
-
-# 5.11 Padronização de Vídeos
-
-Formato recomendado:
-
-```text
-Container: MP4
-Codec: H.264
-Resolução: 1920x1080
-Frame rate: 30 FPS
-Áudio: AAC
-```
-
-A plataforma deverá opcionalmente converter vídeos enviados para um padrão conhecido.
-
-Pode utilizar:
-
-```text
-FFmpeg
-```
-
----
-
-# 5.12 Campanhas
-
-Campos:
-
-```text
-id
-advertiser_id
-name
+description
 start_date
 end_date
 status
 priority
 daily_limit
 total_limit
+created_by
+approved_by
+approved_at
 created_at
 updated_at
 ```
 
-Estados:
+Status:
 
 ```text
 draft
+pending_approval
+approved
 scheduled
 active
 paused
+rejected
 completed
 cancelled
 ```
 
 ---
 
-# 5.13 Segmentação
-
-Uma campanha poderá ser exibida em:
-
-- uma tela
-- várias telas
-- estabelecimento
-- vários estabelecimentos
-- cidade
-- bairro
-- grupo
-- toda a rede
-
----
-
-# 5.14 Agendamento
-
-Uma campanha deverá suportar:
-
-### Intervalo de datas
+# 13. View de Campanha
 
 ```text
-01/08/2026 até 31/08/2026
-```
-
-### Dias da semana
-
-```text
-segunda
-terça
-quarta
-quinta
-sexta
-```
-
-### Horários
-
-```text
-11:00 - 14:00
-```
-
-Exemplo:
-
-```text
-Campanha Restaurante X
-
-Segunda a sexta
-11:00 até 14:30
+Campanha
+├── Visão geral
+├── Mídias
+├── Locais
+├── Agendamento
+├── Frequência
+├── Aprovação
+├── Exibições
+└── Histórico
 ```
 
 ---
 
-# 5.15 Frequência de Exibição
+# 14. Mídias
 
-O sistema deverá permitir diferentes pesos.
-
-Exemplo:
+Tipos iniciais:
 
 ```text
-Plano Básico
-peso 1
-
-Plano Premium
-peso 2
-
-Plano Destaque
-peso 5
+video
+image
 ```
 
-Uma playlist poderá ser gerada considerando esses pesos.
-
----
-
-# 5.16 Limite de Exibições
-
-Opcionalmente uma campanha poderá contratar:
+Formatos:
 
 ```text
-100 exibições/dia
+Vídeo: MP4 / H.264
+Imagem: WebP / JPEG / PNG
 ```
 
-ou:
+Campos:
 
 ```text
-10.000 exibições durante a campanha
+id
+client_id
+name
+type
+file_path
+file_size
+mime_type
+duration
+width
+height
+checksum
+status
+uploaded_by
+approved_by
+approved_at
+rejection_reason
+created_at
+updated_at
 ```
 
-O sistema deverá controlar esses limites.
-
----
-
-# 5.17 Conteúdo do Próprio Estabelecimento
-
-Cada estabelecimento poderá receber uma porcentagem da grade.
-
-Exemplo:
+Status:
 
 ```text
-80% anúncios comerciais
-20% conteúdo do estabelecimento
-```
-
-O estabelecimento poderá possuir várias mídias próprias.
-
-Exemplo:
-
-```text
-Promoção da semana
-Instagram
-WhatsApp
-Horário de funcionamento
-Cardápio
+processing
+pending_approval
+approved
+rejected
+archived
 ```
 
 ---
 
-# 5.18 Playlists
+# 15. Fluxo de Upload pelo Cliente
 
-Uma playlist será a lista de conteúdos que uma tela deverá reproduzir.
+```text
+Cliente
+↓
+envia vídeo/imagem
+↓
+Laravel recebe e valida
+↓
+processa
+↓
+status = pending_approval
+↓
+Admin/Suporte analisa
+```
 
-Exemplo:
+Aprovado:
+
+```text
+approved
+↓
+pode entrar em campanha
+↓
+playlist atualizada
+↓
+dispositivos sincronizam
+```
+
+Rejeitado:
+
+```text
+rejected
+↓
+cliente recebe motivo
+```
+
+---
+
+# 16. Aprovação de Conteúdo
+
+View:
+
+```text
+Admin / Suporte
+→ Aprovações
+```
+
+Filtros:
+
+```text
+Aguardando
+Aprovados
+Rejeitados
+Cliente
+Tipo
+Data
+```
+
+Ações:
+
+```text
+Visualizar
+Reproduzir
+Aprovar
+Rejeitar
+Adicionar observação
+```
+
+---
+
+# 17. Estabelecimentos
+
+Campos:
+
+```text
+id
+name
+legal_name
+document
+phone
+email
+contact_name
+address
+number
+complement
+neighborhood
+city
+state
+zip_code
+latitude
+longitude
+status
+opening_hours
+notes
+created_at
+updated_at
+```
+
+Cada estabelecimento poderá ter telas, contrato, valor mensal, conteúdo próprio, categorias bloqueadas e dispositivos.
+
+---
+
+# 18. Contrato do Estabelecimento
+
+Campos:
+
+```text
+start_date
+end_date
+monthly_payment
+payment_day
+free_ad_percentage
+revenue_share
+status
+notes
+```
+
+---
+
+# 19. Telas
+
+```text
+Estabelecimento
+└── Tela
+    └── Dispositivo
+```
+
+Campos:
+
+```text
+id
+establishment_id
+name
+description
+orientation
+resolution
+location_description
+status
+created_at
+updated_at
+```
+
+---
+
+# 20. Dispositivos
+
+Cada PC Linux será um dispositivo.
+
+Campos:
+
+```text
+id
+screen_id
+device_code
+device_secret_hash
+hostname
+os_version
+agent_version
+player_version
+last_seen_at
+last_ip
+storage_total
+storage_free
+uptime
+status
+registered_at
+created_at
+updated_at
+```
+
+Status:
+
+```text
+pending
+online
+offline
+maintenance
+disabled
+```
+
+---
+
+# 21. View de Dispositivo
+
+Mostrar:
+
+```text
+Status
+Último contato
+Playlist
+Versão do Agent
+Versão do Player
+Armazenamento
+Uptime
+Último erro
+```
+
+Ações futuras:
+
+```text
+Sincronizar agora
+Reiniciar player
+Reiniciar agent
+Limpar cache
+Capturar screenshot
+Coletar logs
+Desativar dispositivo
+```
+
+---
+
+# 22. Provisionamento
+
+```text
+Node Agent inicia
+↓
+solicita registro
+↓
+Laravel gera código
+↓
+TV mostra código
+↓
+Admin associa código a estabelecimento/tela
+↓
+dispositivo é ativado
+```
+
+---
+
+# 23. Playlist
+
+Laravel determina o conteúdo de cada TV.
 
 ```json
 {
-  "version": 38,
-  "screen_id": 12,
+  "version": 42,
   "items": [
     {
-      "campaign_id": 93,
-      "media_id": 203,
+      "media_id": 87,
+      "type": "video",
+      "url": "https://cdn.exemplo.com/87.mp4",
+      "sha256": "...",
       "duration": 15
-    },
-    {
-      "campaign_id": 96,
-      "media_id": 211,
-      "duration": 20
     }
   ]
 }
 ```
 
-Toda alteração deverá incrementar uma versão.
+---
+
+# 24. Versionamento da Playlist
+
+```text
+playlist 41
+↓
+nova campanha aprovada
+↓
+playlist 42
+```
+
+O dispositivo poderá consultar apenas:
+
+```text
+GET /api/device/playlist/version
+```
+
+Se não mudou, nenhuma mídia é baixada.
+
+---
+
+# 25. API Central do Laravel
+
+Rotas sugeridas:
+
+```text
+POST /api/device/register
+POST /api/device/activate
+GET  /api/device/configuration
+GET  /api/device/playlist/version
+GET  /api/device/playlist
+POST /api/device/heartbeat
+POST /api/device/events
+POST /api/device/errors
+```
+
+---
+
+# 26. Autenticação dos Dispositivos
+
+Cada equipamento possui:
+
+```text
+device_id
+device_secret
+```
+
+Nunca utilizar uma única chave global.
+
+---
+
+# 27. Digital Signage Device
+
+Estrutura:
+
+```text
+digital-signage-device/
+├── src/
+│   ├── api/
+│   ├── auth/
+│   ├── sync/
+│   ├── downloader/
+│   ├── storage/
+│   ├── heartbeat/
+│   ├── events/
+│   ├── watchdog/
+│   ├── player/
+│   └── index.js
+├── storage/
+│   ├── media/
+│   ├── database/
+│   ├── logs/
+│   └── playlist.json
+└── package.json
+```
+
+---
+
+# 28. Rotinas do Node Agent
+
+O Agent ficará ativo com `systemd`.
+
+```text
+a cada 30s  → heartbeat
+a cada 60s  → verificar versão da playlist
+a cada 10s  → watchdog do player
+a cada 5min → sincronizar eventos pendentes
+a cada 1h   → verificar armazenamento/cache
+```
+
+Ao iniciar, sincroniza imediatamente.
+
+---
+
+# 29. Download das Mídias
+
+```text
+Laravel
+↓
+playlist nova
+↓
+Node compara com playlist local
+↓
+identifica arquivos ausentes
+↓
+baixa
+↓
+valida checksum
+↓
+salva no SSD
+↓
+ativa playlist
+```
+
+---
+
+# 30. Cache Local
+
+```text
+/opt/signage/media/
+├── 87.mp4
+├── 91.webp
+└── 102.mp4
+```
+
+O player consome arquivos locais.
+
+---
+
+# 31. Atualização Atômica
+
+Nunca ativar playlist antes de todos os arquivos estarem válidos.
+
+```text
+recebe playlist
+↓
+baixa arquivos
+↓
+valida
+↓
+todos OK?
+↓
+ativa
+```
+
+Enquanto isso, a playlist anterior continua rodando.
+
+---
+
+# 32. Funcionamento Offline
+
+Obrigatório:
+
+```text
+Internet ❌
+Laravel ❌
+
+Node Agent ✅
+SSD ✅
+Player ✅
+TV ✅
+```
+
+---
+
+# 33. Heartbeat
 
 Exemplo:
-
-```text
-playlist 37
-↓
-nova campanha adicionada
-↓
-playlist 38
-```
-
----
-
-# 5.19 Dashboard
-
-Dashboard inicial:
-
-```text
-Telas
-25
-
-Online
-23
-
-Offline
-2
-
-Campanhas ativas
-42
-
-Anunciantes
-31
-
-Exibições hoje
-128.430
-```
-
-Mostrar também:
-
-- telas offline
-- erros recentes
-- pouco armazenamento
-- dispositivos desatualizados
-- campanhas terminando
-- campanhas sem mídia
-- campanhas aguardando aprovação
-
----
-
-# 5.20 Monitoramento dos Dispositivos
-
-Exemplo:
-
-```text
-TV Recepção - Academia Strong
-
-Status: Online
-Último contato: 12 segundos
-Agent: 1.2.4
-Playlist: 38
-Disco livre: 76 GB
-IP: xxx.xxx.xxx.xxx
-Tempo ligado: 15 dias
-```
-
----
-
-# 5.21 Heartbeat
-
-O dispositivo enviará periodicamente:
-
-```http
-POST /api/devices/heartbeat
-```
-
-Payload aproximado:
 
 ```json
 {
-  "device_id": "TV-SP-0001",
+  "playlist_version": 42,
   "agent_version": "1.0.0",
   "player_version": "1.0.0",
-  "playlist_version": 38,
-  "current_media_id": 211,
-  "disk_total": 128000000000,
-  "disk_free": 86000000000,
-  "uptime": 848294
+  "storage_total": 128000000000,
+  "storage_free": 86000000000,
+  "uptime": 848294,
+  "current_media_id": 91
 }
 ```
 
-Sugestão:
-
-```text
-heartbeat a cada 60 segundos
-```
-
-Considerar offline após:
-
-```text
-5 minutos sem heartbeat
-```
+Considerar offline inicialmente após 5 minutos sem heartbeat.
 
 ---
 
-# 5.22 Registro de Exibições
-
-Registrar o início e a conclusão da reprodução.
+# 34. Registro de Exibições
 
 Eventos:
 
@@ -815,1411 +982,500 @@ playback_completed
 playback_failed
 ```
 
-Exemplo:
-
-```json
-{
-  "device_id": "TV-SP-0001",
-  "campaign_id": 33,
-  "media_id": 89,
-  "started_at": "2026-08-07T15:20:00Z",
-  "finished_at": "2026-08-07T15:20:15Z",
-  "completed": true
-}
-```
-
 ---
 
-# 5.23 Operação Offline dos Logs
+# 35. Fila Offline
 
-Caso a internet esteja indisponível:
+Usar SQLite para eventos pendentes.
 
 ```text
-Player reproduz
+evento
 ↓
-Agent registra evento localmente
+sem internet
 ↓
-Internet indisponível
-↓
-evento fica em fila
+fica local
 ↓
 internet retorna
 ↓
-eventos são enviados ao servidor
+envia ao Laravel
 ```
-
-Não perder registros por falha temporária de internet.
 
 ---
 
-# 5.24 Relatórios
+# 36. Player Local
 
-Relatórios por:
+Servidor local:
 
-- anunciante
-- campanha
-- estabelecimento
-- tela
-- cidade
-- período
-- mídia
+```text
+http://127.0.0.1:3000
+```
+
+Chromium:
+
+```bash
+chromium --kiosk http://127.0.0.1:3000
+```
+
+---
+
+# 37. Player
+
+Requisitos:
+
+- vídeo;
+- imagem;
+- autoplay;
+- fullscreen;
+- sem controles;
+- preload;
+- loop;
+- pular mídia com erro;
+- informar início/fim ao Agent.
+
+---
+
+# 38. Agendamento
+
+Campanhas podem ter:
+
+```text
+datas
+dias da semana
+horários
+```
+
+---
+
+# 39. Frequência
+
+```text
+Básico   peso 1
+Premium  peso 2
+Destaque peso 5
+```
+
+---
+
+# 40. Conteúdo do Estabelecimento
 
 Exemplo:
 
 ```text
-Campanha: Pizzaria Bella
-
-Período:
-01/08/2026 - 31/08/2026
-
-Academia Strong: 4.821
-Mercado Central: 5.920
-Clínica Saúde: 3.641
-
-Total de exibições:
-14.382
+80% anúncios comerciais
+20% conteúdo do estabelecimento
 ```
-
-Importante:
-
-O sistema deve usar o termo:
-
-```text
-exibições
-```
-
-e não afirmar que foram:
-
-```text
-14.382 pessoas
-```
-
-sem uma tecnologia própria de medição de audiência.
 
 ---
 
-# 5.25 Auditoria
+# 41. Bloqueio de Concorrentes
 
-Registrar ações administrativas:
+Exemplo:
+
+```text
+Academia Strong
+→ bloquear categoria Academias
+```
+
+---
+
+# 42. Relatórios
+
+Filtros:
+
+- cliente;
+- campanha;
+- estabelecimento;
+- tela;
+- cidade;
+- mídia;
+- período.
+
+Usar o termo **exibições**, não pessoas alcançadas sem medição real.
+
+---
+
+# 43. Monitoramento
+
+View:
+
+```text
+Admin / Suporte
+→ Monitoramento
+```
+
+Mostrar:
+
+```text
+Online
+Offline
+Último heartbeat
+Agent
+Player
+Playlist
+Espaço livre
+Uptime
+Último erro
+```
+
+---
+
+# 44. Alertas
+
+```text
+TV offline
+Disco quase cheio
+Playlist atrasada
+Erro de download
+Erro de mídia
+Agent antigo
+Campanha próxima do fim
+Mídia aguardando aprovação
+```
+
+---
+
+# 45. Auditoria
+
+Registrar:
 
 ```text
 user_id
+module
 action
-entity
-entity_id
-old_data
-new_data
+description
+auditable_type
+auditable_id
+old_values
+new_values
 ip
 user_agent
 created_at
 ```
 
-Exemplos:
-
-```text
-Campanha criada
-Campanha pausada
-Vídeo removido
-Dispositivo desativado
-Playlist alterada
-```
-
 ---
 
-# 6. Requisitos do Signage Agent
-
-O Agent será um serviço Node.js executado no Linux.
-
-Exemplo:
-
-```text
-/opt/signage/
-├── agent/
-├── player/
-├── media/
-├── data/
-├── logs/
-└── config/
-```
-
----
-
-# 6.1 Inicialização Automática
-
-Criar serviço:
-
-```text
-signage-agent.service
-```
-
-Utilizando:
-
-```text
-systemd
-```
-
-Fluxo:
-
-```text
-PC liga
-↓
-Linux inicia
-↓
-signage-agent.service
-↓
-Agent inicia
-↓
-Player inicia
-↓
-propagandas começam
-```
-
----
-
-# 6.2 Auto Login
-
-Caso o player dependa de sessão gráfica:
-
-- configurar usuário dedicado
-- habilitar auto login
-- iniciar ambiente gráfico mínimo
-- iniciar Chromium automaticamente
-
----
-
-# 6.3 Kiosk Mode
-
-Executar Chromium em modo:
-
-```bash
-chromium --kiosk http://localhost:3000
-```
-
-Adicionalmente:
-
-- remover barra de navegação
-- esconder cursor
-- impedir sleep
-- impedir screensaver
-- impedir notificações
-- impedir atualizações abrindo popups
-
----
-
-# 6.4 Player Local
-
-O Agent deverá disponibilizar uma aplicação local:
-
-```text
-http://localhost:3000
-```
-
-O Chromium acessará apenas esse endereço.
-
-Benefício:
-
-O player não depende da disponibilidade da internet para abrir.
-
----
-
-# 6.5 Cache de Mídias
-
-Mídias deverão ser armazenadas em:
-
-```text
-/opt/signage/media/
-```
-
-Exemplo:
-
-```text
-/opt/signage/media/89.mp4
-/opt/signage/media/103.mp4
-/opt/signage/media/145.jpg
-```
-
----
-
-# 6.6 Sincronização
-
-Fluxo:
-
-```text
-Agent consulta API
-↓
-API informa playlist_version = 38
-↓
-Agent possui version = 37
-↓
-baixa manifesto
-↓
-identifica arquivos faltantes
-↓
-baixa conteúdo
-↓
-valida arquivos
-↓
-ativa playlist 38
-```
-
----
-
-# 6.7 Atualização Atômica
-
-Nunca ativar playlist antes de baixar todos os arquivos necessários.
-
-Errado:
-
-```text
-recebe playlist
-↓
-ativa imediatamente
-↓
-vídeo ainda não foi baixado
-↓
-erro
-```
-
-Correto:
-
-```text
-recebe playlist
-↓
-baixa tudo
-↓
-valida tudo
-↓
-salva nova playlist
-↓
-troca playlist ativa
-```
-
----
-
-# 6.8 Checksum
-
-Cada mídia deverá possuir:
-
-```text
-SHA-256
-```
-
-Após o download:
-
-```text
-download
-↓
-calcular SHA-256
-↓
-comparar com servidor
-```
-
-Se inválido:
-
-```text
-descartar
-↓
-baixar novamente
-```
-
----
-
-# 6.9 Downloads Resumíveis
-
-Futuramente implementar downloads que possam continuar após interrupções.
-
-Útil para vídeos grandes e internet instável.
-
----
-
-# 6.10 Limpeza de Arquivos
-
-O Agent deverá identificar mídias não utilizadas.
-
-Exemplo:
-
-```text
-playlist antiga:
-1.mp4
-2.mp4
-3.mp4
-
-playlist nova:
-1.mp4
-4.mp4
-
-arquivos removíveis:
-2.mp4
-3.mp4
-```
-
-A limpeza deverá ocorrer apenas após confirmar que a nova playlist está funcional.
-
----
-
-# 6.11 Espaço em Disco
-
-Definir limites.
-
-Exemplo:
-
-```text
-warning:
-menos de 10 GB
-
-critical:
-menos de 3 GB
-```
-
-Reportar ao servidor.
-
----
-
-# 6.12 Funcionamento sem Internet
-
-Requisito obrigatório.
-
-Se a internet cair:
-
-```text
-API ❌
-Internet ❌
-
-Player:
-✅ continua
-
-Playlist local:
-✅ continua
-
-Vídeos locais:
-✅ continuam
-```
-
-O sistema deverá continuar indefinidamente com a última playlist válida.
-
----
-
-# 6.13 Recuperação após Reinicialização
-
-Após falta de energia:
-
-```text
-energia retorna
-↓
-PC liga
-↓
-Linux inicia
-↓
-Agent inicia
-↓
-última playlist válida
-↓
-Player inicia
-```
-
-Não depender da internet para recuperar a reprodução.
-
----
-
-# 6.14 Watchdog do Player
-
-O Agent deverá verificar se o Chromium/player está funcionando.
-
-Caso o processo pare:
-
-```text
-Chromium morreu
-↓
-Agent detecta
-↓
-reinicia Chromium
-```
-
----
-
-# 6.15 Watchdog da Reprodução
-
-O player deverá informar continuamente seu estado.
-
-Exemplo:
-
-```text
-media_id: 89
-position: 12.4s
-state: playing
-```
-
-Se ficar travado por determinado período:
-
-```text
-Agent reinicia Player
-```
-
----
-
-# 6.16 Logs Locais
-
-Registrar:
-
-```text
-agent.log
-player.log
-sync.log
-errors.log
-```
-
-Implementar rotação para evitar lotar o SSD.
-
----
-
-# 6.17 Fila Offline
-
-Usar banco local simples, por exemplo:
-
-```text
-SQLite
-```
-
-para:
-
-- reproduções pendentes
-- erros
-- heartbeat
-- comandos pendentes
-
----
-
-# 6.18 Relógio
-
-Horários corretos são essenciais para agendamento.
-
-Configurar:
-
-```text
-NTP
-```
-
-O Agent deverá detectar relógio significativamente incorreto.
-
----
-
-# 7. Requisitos do Player
-
-# 7.1 Reprodução de Vídeos
-
-Utilizar:
-
-```html
-<video>
-```
-
-Requisitos:
-
-- autoplay
-- muted por padrão
-- fullscreen
-- preload
-- sem controles
-- transição rápida
-- tratamento de erro
-
----
-
-# 7.2 Imagens
-
-Imagens terão duração configurável.
-
-Exemplo:
-
-```text
-banner.jpg
-duration: 10 segundos
-```
-
----
-
-# 7.3 Loop
-
-Ao chegar ao último conteúdo:
-
-```text
-último
-↓
-primeiro
-```
-
-sem tela preta prolongada.
-
----
-
-# 7.4 Preload
-
-O próximo conteúdo deverá ser preparado antes do término do atual sempre que possível.
-
-Objetivo:
-
-reduzir tela preta entre anúncios.
-
----
-
-# 7.5 Falha em uma mídia
-
-Se uma mídia falhar:
-
-```text
-registrar erro
-↓
-pular mídia
-↓
-continuar playlist
-```
-
-Nunca interromper toda a programação por causa de um único arquivo.
-
----
-
-# 7.6 Áudio
-
-Configuração por tela:
-
-```text
-enabled
-disabled
-volume
-```
-
-Padrão recomendado:
-
-```text
-muted
-```
-
-Muitos estabelecimentos não desejarão áudio publicitário.
-
----
-
-# 7.7 Orientação
-
-Suportar:
-
-```text
-landscape
-portrait
-```
+# 46. Notificações
 
 Exemplos:
 
 ```text
-1920x1080
-
-1080x1920
+Nova mídia aguardando aprovação
+TV offline
+Campanha aprovada
+Campanha rejeitada
+Campanha próxima do fim
+Cliente enviou novo vídeo
 ```
 
 ---
 
-# 8. Comunicação Agent ↔ Servidor
+# 47. Financeiro
 
-Endpoints sugeridos:
+Fase posterior:
 
 ```text
-POST /api/devices/register
-
-POST /api/devices/activate
-
-POST /api/devices/heartbeat
-
-GET /api/devices/{id}/configuration
-
-GET /api/devices/{id}/playlist
-
-POST /api/devices/{id}/events
-
-POST /api/devices/{id}/errors
+Planos
+Cobranças
+Recebimentos
+Pagamentos aos estabelecimentos
+Resumo financeiro
 ```
 
 ---
 
-# 9. Segurança dos Dispositivos
-
-Cada dispositivo deverá possuir credenciais próprias.
-
-Nunca:
-
-```text
-UMA_CHAVE_GLOBAL_PARA_TODAS_AS_TVS
-```
-
-Usar:
-
-```text
-device_id
-device_secret
-```
-
-Exemplo:
-
-```text
-TV-001 -> secret A
-TV-002 -> secret B
-TV-003 -> secret C
-```
-
-Assim um dispositivo comprometido pode ser revogado individualmente.
-
----
-
-# 9.1 Armazenamento das Credenciais
-
-No servidor:
-
-```text
-hash do secret
-```
-
-No dispositivo:
-
-arquivo protegido:
-
-```text
-/etc/signage/device.json
-```
-
-Permissão:
-
-```text
-600
-```
-
----
-
-# 9.2 HTTPS
-
-Toda comunicação externa deverá utilizar:
-
-```text
-HTTPS
-```
-
-Nunca enviar credenciais por HTTP.
-
----
-
-# 9.3 Assinatura de Requisições
-
-Futuramente considerar:
-
-- HMAC
-- timestamp
-- nonce
-
-para diminuir risco de replay.
-
----
-
-# 9.4 Revogação
-
-O painel deverá permitir:
-
-```text
-Desativar dispositivo
-```
-
-Após isso:
-
-```text
-API recusa autenticação
-```
-
----
-
-# 10. Comandos Remotos
-
-Futuramente o servidor poderá enviar comandos.
-
-Exemplos:
-
-```text
-restart_player
-restart_agent
-restart_device
-sync_playlist
-clear_cache
-update_agent
-take_screenshot
-collect_logs
-```
-
-Comandos deverão ser autenticados e auditados.
-
----
-
-# 11. Screenshot Remoto
-
-Funcionalidade futura útil.
-
-O administrador solicita:
-
-```text
-Capturar tela
-```
-
-O dispositivo envia screenshot.
-
-Isso permite verificar remotamente o que está sendo exibido.
-
-Deve ser usado apenas para capturar a saída digital da própria programação da tela, não câmeras ou pessoas do ambiente.
-
----
-
-# 12. Atualização do Agent
-
-Versões:
-
-```text
-1.0.0
-1.0.1
-1.1.0
-```
-
-Dashboard:
-
-```text
-TV-001  1.1.0
-TV-002  1.1.0
-TV-003  1.0.0 ⚠
-```
-
-Atualização deverá possuir:
-
-- checksum
-- assinatura opcional
-- rollback
-- atualização gradual
-
----
-
-# 13. Banco de Dados — Entidades Principais
-
-Estrutura inicial:
-
-```text
-users
-
-establishments
-establishment_contracts
-
-screens
-devices
-
-advertisers
-categories
-
-media
-
-campaigns
-campaign_targets
-campaign_schedules
-campaign_media
-
-playlists
-playlist_items
-
-playback_events
-
-device_heartbeats
-device_errors
-device_commands
-
-invoices
-payments
-
-audit_logs
-```
-
----
-
-# 14. Relacionamentos
-
-```text
-Establishment
-    └── Screens
-            └── Device
-
-
-Advertiser
-    └── Campaigns
-            └── Media
-
-
-Campaign
-    └── Targets
-            ├── Screens
-            ├── Establishments
-            └── Groups
-```
-
----
-
-# 15. Financeiro
-
-Fase futura.
-
-Gerenciar:
-
-## Receita
-
-Cobrança dos anunciantes.
-
-Campos:
-
-```text
-advertiser_id
-campaign_id
-amount
-due_date
-paid_at
-status
-```
-
-## Custo
-
-Pagamento aos estabelecimentos.
-
-Campos:
-
-```text
-establishment_id
-amount
-due_date
-paid_at
-status
-```
-
----
-
-# 16. Métricas de Negócio
-
-Dashboard futuro:
+# 48. Métricas Comerciais
 
 ```text
 MRR
-
 Receita por tela
-
 Custo por tela
-
 Margem por tela
-
-Número de anunciantes
-
-Receita média por anunciante
-
-Taxa de ocupação da grade
-
+Receita por cliente
+Ticket médio
+Ocupação da grade
+Campanhas ativas
 Exibições por tela
-
-Estabelecimentos ativos
-```
-
-Exemplo:
-
-```text
-TV Academia Strong
-
-Receita:
-R$ 1.400
-
-Pagamento ao estabelecimento:
-R$ 150
-
-Infraestrutura:
-R$ 30
-
-Margem antes de impostos:
-R$ 1.220
 ```
 
 ---
 
-# 17. Alertas
-
-Gerar alerta para:
+# 49. Menu Admin/Suporte
 
 ```text
-TV offline > 5 minutos
+Dashboard
 
-Disco quase cheio
+Operação
+├── Campanhas
+├── Aprovações
+├── Mídias
+├── Playlists
+└── Alertas
 
-Playlist desatualizada
+Rede
+├── Estabelecimentos
+├── Telas
+├── Dispositivos
+└── Monitoramento
 
-Falha repetida em mídia
+Clientes
+├── Clientes
+└── Usuários dos clientes
 
-Agent antigo
+Relatórios
+├── Campanhas
+├── Exibições
+├── Dispositivos
+└── Clientes
 
-Campanha sem mídia
+Administração
+├── Usuários
+├── Permissões
+├── Auditoria
+└── Configurações
 
-Campanha próxima do fim
-
-Dispositivo sem sincronizar
+Financeiro
+├── Cobranças
+├── Pagamentos
+└── Resumo
 ```
 
 ---
 
-# 18. Requisitos Não Funcionais
-
-## Disponibilidade
-
-A reprodução local deve continuar mesmo se:
-
-- API estiver offline
-- internet cair
-- CDN estiver indisponível
-
-## Performance
-
-Transição entre anúncios deverá ser rápida.
-
-## Escalabilidade
-
-A arquitetura deverá suportar inicialmente:
+# 50. Menu do Cliente
 
 ```text
-10 TVs
-```
+Dashboard
 
-e crescer para:
+Publicidade
+├── Minhas campanhas
+├── Minhas mídias
+├── Enviar mídia
+└── Solicitações
 
-```text
-100
-500
-1.000+
-```
+Resultados
+└── Relatórios
 
-sem alteração completa da arquitetura.
-
-## Observabilidade
-
-Registrar:
-
-- erros
-- duração de downloads
-- sincronizações
-- falhas de reprodução
-- heartbeats
-
-## Segurança
-
-- HTTPS
-- credenciais individuais
-- rate limit
-- logs de auditoria
-- validação de uploads
-- controle de acesso
-
----
-
-# 19. Hardware Recomendado para Player
-
-O sistema não dependerá de Raspberry Pi.
-
-Poderão ser utilizados:
-
-- PCs antigos
-- Mini PCs
-- Dell OptiPlex Micro
-- Lenovo ThinkCentre Tiny
-- HP ProDesk Mini
-- Raspberry Pi futuramente
-
-Configuração sugerida:
-
-```text
-CPU:
-dual-core ou superior
-
-RAM:
-4 GB+
-
-Storage:
-SSD 64/120 GB+
-
-Vídeo:
-saída HDMI
-
-Rede:
-Ethernet ou Wi-Fi
+Conta
+├── Minha empresa
+├── Meu perfil
+└── Segurança
 ```
 
 ---
 
-# 20. Sistema Operacional do Player
+# 51. Ordem de Implementação — Laravel/Vue
 
-Sugestão:
+## Fase 1
 
 ```text
-Debian
+[ ] Login com Sanctum
+[ ] Perfil
+[ ] Usuários internos
+[ ] Permissões
+[ ] Dashboard básico
 ```
 
-ou:
+## Fase 2
 
 ```text
-Ubuntu
+[ ] Clientes
+[ ] Usuários de clientes
+[ ] Categorias
+[ ] Estabelecimentos
+[ ] Telas
+[ ] Dispositivos
 ```
 
-Para produção, preferir uma instalação mínima.
-
-Não instalar aplicações desnecessárias.
-
----
-
-# 21. Padronização dos Equipamentos
-
-Quando o projeto crescer, criar uma imagem padrão do sistema.
-
-Exemplo:
+## Fase 3
 
 ```text
-signage-linux.img
-```
-
-Contendo:
-
-```text
-Linux
-Node.js
-Agent
-Chromium
-systemd service
-configurações de kiosk
-watchdog
-```
-
-Novo equipamento:
-
-```text
-instalar imagem
-↓
-ligar
-↓
-provisionar
-```
-
----
-
-# 22. MVP — Fase 1
-
-Objetivo:
-
-Uma única TV reproduzindo vídeos locais.
-
-Implementar:
-
-- Linux
-- Chromium kiosk
-- player HTML
-- playlist JSON
-- autoplay
-- loop
-- inicialização automática
-
-Não implementar ainda:
-
-- painel
-- API
-- clientes
-- financeiro
-
----
-
-# 23. MVP — Fase 2
-
-Adicionar Agent Node.js.
-
-Implementar:
-
-- servidor local
-- systemd
-- watchdog
-- armazenamento local
-- logs
-- SQLite
-
----
-
-# 24. MVP — Fase 3
-
-Adicionar API.
-
-Implementar:
-
-- dispositivos
-- autenticação
-- heartbeat
-- playlist remota
-- download de vídeos
-- checksum
-- cache offline
-
----
-
-# 25. MVP — Fase 4
-
-Adicionar painel administrativo.
-
-Implementar:
-
-- login
-- estabelecimentos
-- telas
-- dispositivos
-- anunciantes
-- mídias
-- campanhas
-- playlists
-
----
-
-# 26. MVP — Fase 5
-
-Adicionar inteligência comercial.
-
-Implementar:
-
-- agendamento
-- frequência
-- peso
-- segmentação
-- bloqueio de concorrentes
-- conteúdo gratuito do estabelecimento
-
----
-
-# 27. MVP — Fase 6
-
-Adicionar relatórios.
-
-Implementar:
-
-- playback events
-- exibições por campanha
-- exibições por tela
-- relatórios por período
-- exportação CSV/PDF futuramente
-
----
-
-# 28. MVP — Fase 7
-
-Adicionar financeiro.
-
-Implementar:
-
-- planos
-- contratos
-- cobranças
-- pagamentos aos pontos
-- margem por tela
-- receita por campanha
-
----
-
-# 29. Prioridades
-
-## Obrigatório para primeira instalação comercial
-
-```text
-[ ] Inicialização automática
-[ ] Player fullscreen
-[ ] Cache local
-[ ] Funcionamento offline
-[ ] Sincronização remota
-[ ] Heartbeat
-[ ] Watchdog
-[ ] Registro de reproduções
-[ ] Segurança individual dos dispositivos
-[ ] Dashboard de status
-```
-
-## Segunda prioridade
-
-```text
+[ ] Mídias
 [ ] Campanhas
-[ ] Agendamento
+[ ] Aprovação
 [ ] Segmentação
-[ ] Frequência
-[ ] Relatórios
-[ ] Conteúdo próprio do estabelecimento
+[ ] Agendamento
 ```
 
-## Terceira prioridade
+## Fase 4
+
+```text
+[ ] Playlists
+[ ] API para dispositivos
+[ ] Device authentication
+[ ] Heartbeat
+[ ] Monitoramento
+```
+
+## Fase 5
+
+```text
+[ ] Eventos de reprodução
+[ ] Relatórios
+[ ] Auditoria completa
+[ ] Alertas
+```
+
+## Fase 6
+
+```text
+[ ] Portal do cliente
+[ ] Upload pelo cliente
+[ ] Aprovação de alterações
+[ ] Relatórios do cliente
+```
+
+## Fase 7
 
 ```text
 [ ] Financeiro
-[ ] Portal do anunciante
-[ ] Atualização remota
-[ ] Screenshot remoto
-[ ] Métricas avançadas
+[ ] Contratos
+[ ] Pagamentos
+[ ] Métricas comerciais
 ```
 
 ---
 
-# 30. Regra Principal do Projeto
+# 52. Ordem de Implementação — Node Device
 
-A TV nunca deve ficar inutilizada simplesmente porque o servidor ou a internet estão indisponíveis.
-
-A arquitetura deve sempre seguir:
+## Fase 1
 
 ```text
-Internet disponível
-        ↓
-sincroniza conteúdo
-        ↓
+[ ] Projeto Node
+[ ] Configuração local
+[ ] Logs
+[ ] systemd
+```
+
+## Fase 2
+
+```text
+[ ] Provisionamento
+[ ] Device ID
+[ ] Device Secret
+[ ] Comunicação com Laravel
+```
+
+## Fase 3
+
+```text
+[ ] Consulta de playlist
+[ ] Versionamento
+[ ] Download
+[ ] Checksum
+[ ] Cache
+```
+
+## Fase 4
+
+```text
+[ ] Player local
+[ ] Chromium kiosk
+[ ] Vídeos
+[ ] Imagens
+[ ] Loop
+```
+
+## Fase 5
+
+```text
+[ ] Heartbeat
+[ ] Watchdog
+[ ] Operação offline
+[ ] Recuperação após reiniciar
+```
+
+## Fase 6
+
+```text
+[ ] Playback events
+[ ] SQLite
+[ ] Fila offline
+[ ] Reenvio automático
+```
+
+## Fase 7
+
+```text
+[ ] Atualização remota
+[ ] Screenshot
+[ ] Coleta remota de logs
+[ ] Limpeza de cache
+```
+
+---
+
+# 53. Primeiro Marco Comercial
+
+```text
+Admin envia vídeo
+↓
+Admin cria campanha
+↓
+Admin seleciona TV
+↓
+campanha é aprovada
+↓
+Laravel gera nova playlist
+↓
+Node detecta nova versão
+↓
+Node baixa vídeo
+↓
+TV começa a exibir
+↓
+Node registra exibição
+↓
+Laravel recebe evento
+↓
+Dashboard mostra resultado
+```
+
+Tudo sem acessar fisicamente o computador do estabelecimento.
+
+---
+
+# 54. Regra Principal
+
+A TV nunca deverá parar por causa de:
+
+```text
+internet caída
+API Laravel indisponível
+CDN indisponível
+```
+
+Fluxo obrigatório:
+
+```text
+sincroniza
+↓
+baixa
+↓
+valida
+↓
 salva localmente
-        ↓
+↓
 reproduz localmente
 ```
 
-e nunca:
-
-```text
-TV
-↓
-stream permanente pela internet
-```
-
 ---
 
-# 31. Fluxo Final Esperado
+# 55. Visão de Longo Prazo
+
+A arquitetura deve suportar evolução de:
 
 ```text
-Administrador cria campanha
+1 TV
 ↓
-envia vídeo
+10 TVs
 ↓
-seleciona telas
+100 TVs
 ↓
-configura período
+500 TVs
 ↓
-API gera nova playlist
-↓
-Agent detecta nova versão
-↓
-baixa mídia
-↓
-confere checksum
-↓
-ativa playlist
-↓
-TV reproduz anúncio
-↓
-Agent registra exibição
-↓
-evento é enviado ao servidor
-↓
-dashboard e relatório são atualizados
+1.000+ TVs
 ```
 
----
+Laravel será responsável pelo gerenciamento central e regras de negócio.
 
-# 32. Objetivo de Produto
-
-O objetivo não é simplesmente criar um player de vídeos.
-
-O objetivo é criar uma plataforma completa de **Digital Signage / Digital Out-of-Home (DOOH)** capaz de administrar uma rede própria de telas publicitárias, com:
-
-- controle remoto
-- operação offline
-- monitoramento
-- campanhas
-- segmentação
-- relatórios
-- contratos
-- monetização
-- expansão para centenas de dispositivos
-
-O software deverá ser pensado desde o início para que uma nova TV possa ser adicionada à rede sem exigir alterações manuais no código.
-
----
-
-# 33. Nome Provisório dos Componentes
-
-Sugestão:
-
-```text
-signage-api
-signage-admin
-signage-agent
-signage-player
-```
-
-Estrutura geral:
-
-```text
-digital-signage/
-├── signage-api/
-├── signage-admin/
-├── signage-agent/
-├── signage-player/
-└── docs/
-```
-
-Também é possível utilizar um monorepo:
-
-```text
-digital-signage/
-├── apps/
-│   ├── api/
-│   ├── admin/
-│   ├── agent/
-│   └── player/
-│
-├── packages/
-│   ├── shared/
-│   └── contracts/
-│
-└── docs/
-```
-
----
-
-# 34. Próximos Passos Técnicos
-
-A ordem recomendada de desenvolvimento é:
-
-```text
-1. Criar Player local
-2. Configurar Linux em kiosk
-3. Criar Signage Agent
-4. Implementar systemd
-5. Implementar cache offline
-6. Criar API
-7. Provisionar dispositivos
-8. Implementar heartbeat
-9. Implementar sincronização
-10. Criar painel Vue
-11. Criar anunciantes
-12. Criar campanhas
-13. Criar regras de playlist
-14. Registrar exibições
-15. Criar relatórios
-16. Criar financeiro
-17. Criar atualização remota
-```
-
-O primeiro grande marco deverá ser:
-
-```text
-Painel
-↓
-alterar campanha
-↓
-API
-↓
-PC Linux detecta alteração
-↓
-baixa conteúdo
-↓
-TV passa a exibir
-```
-
-sem qualquer acesso físico ao equipamento.
+Node.js será responsável por manter cada dispositivo de publicidade funcionando de forma autônoma no estabelecimento.

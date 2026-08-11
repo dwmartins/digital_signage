@@ -22,7 +22,7 @@ export default [
             },
             {
                 path: 'perfil',
-                name: 'platform.profile',
+                name: 'customer.profile',
                 component: profileView
             },
         ],

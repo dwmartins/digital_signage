@@ -13,6 +13,7 @@ export const platformNavItems = [
         icon: 'pi pi-sitemap',
         children: [
             { label: 'Estabelecimentos', icon: 'pi pi-building', to: '/platform/estabelecimentos', permission: 'establishments.view' },
+            { label: 'Telas', icon: 'pi pi-desktop', to: '/platform/telas', permission: 'screens.view' },
         ],
     },
     { label: 'Usuários suporte', icon: 'pi pi-headphones', to: '/platform/usuarios-suporte', permission: 'support-users.view' },

@@ -2,8 +2,10 @@
 
 namespace App\Domains\Establishment\Models;
 
+use App\Domains\Screen\Models\Screen;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'name',
@@ -37,5 +39,13 @@ class Establishment extends Model
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];
+    }
+
+    /**
+     * Telas instaladas no estabelecimento.
+     */
+    public function screens(): HasMany
+    {
+        return $this->hasMany(Screen::class);
     }
 }

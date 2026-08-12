@@ -29,6 +29,7 @@ class AuditLog extends Model
     public const MODULE_CUSTOMERS = 'customers';
     public const MODULE_CATEGORIES = 'categories';
     public const MODULE_ESTABLISHMENTS = 'establishments';
+    public const MODULE_SCREENS = 'screens';
     public const MODULE_PLANS = 'plans';
     public const MODULE_PROFILE = 'profile';
     public const MODULE_SUPPORT_USERS = 'support_users';
@@ -57,6 +58,7 @@ class AuditLog extends Model
             ['label' => 'Clientes anunciantes', 'value' => self::MODULE_CUSTOMERS],
             ['label' => 'Categorias', 'value' => self::MODULE_CATEGORIES],
             ['label' => 'Estabelecimentos', 'value' => self::MODULE_ESTABLISHMENTS],
+            ['label' => 'Telas', 'value' => self::MODULE_SCREENS],
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],

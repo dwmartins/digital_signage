@@ -87,22 +87,58 @@ onMounted(() => {
             <Button label="Nova categoria" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="openDialog('form')" />
         </div>
 
-        <Card class="mb-3"><template #content>
-            <form class="row g-3 align-items-end" @submit.prevent="fetchAll(1)">
-                <div class="col-lg-4"><div class="field">
-                    <label for="global">Buscar</label>
-                    <IconField><InputIcon class="pi pi-search" /><InputText id="global" v-model="filters.global.value" placeholder="Nome, slug ou descrição" fluid /></IconField>
-                </div></div>
-                <div class="col-md-6 col-lg-2"><div class="field">
-                    <label for="status">Status</label>
-                    <Select id="status" v-model="filters.status.value" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Todas" showClear fluid />
-                </div></div>
-                <div class="col-12 col-lg-auto ms-lg-auto d-grid d-sm-flex gap-2">
-                    <Button type="button" label="Limpar" icon="pi pi-filter-slash" severity="secondary" outlined :loading="loading" @click="clearFilters" />
-                    <Button type="submit" label="Filtrar" icon="pi pi-search" :loading="loading" />
-                </div>
-            </form>
-        </template></Card>
+        <Card class="mb-3">
+            <template #content>
+                <form class="row g-3 align-items-end" @submit.prevent="fetchAll(1)">
+                    <div class="col-lg-4">
+                        <div class="field">
+                            <label for="global">Buscar</label>
+                            <IconField>
+                                <InputIcon class="pi pi-search" />
+                                <InputText
+                                    id="global"
+                                    v-model="filters.global.value"
+                                    placeholder="Nome, slug ou descrição"
+                                    fluid
+                                />
+                            </IconField>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-2">
+                        <div class="field">
+                            <label for="status">Status</label>
+                            <Select
+                                id="status"
+                                v-model="filters.status.value"
+                                :options="statusOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Todas"
+                                showClear
+                                fluid
+                            />
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto ms-lg-auto d-grid d-sm-flex gap-2">
+                        <Button
+                            type="button"
+                            label="Limpar"
+                            icon="pi pi-filter-slash"
+                            severity="secondary"
+                            outlined
+                            :loading="loading"
+                            @click="clearFilters"
+                        />
+                        <Button
+                            type="submit"
+                            label="Filtrar"
+                            icon="pi pi-search"
+                            :loading="loading"
+                        />
+                    </div>
+                </form>
+            </template>
+        </Card>
 
         <Card><template #content>
             <TableSkeleton v-show="loading" :rows="itemsPerPage" :columns="skeletonColumns" class="mt-2 categories-table-skeleton" />
@@ -117,16 +153,42 @@ onMounted(() => {
                 lazy paginator scrollable stripedRows class="mt-2"
                 currentPageReportTemplate="Exibindo {first} a {last} de {totalRecords} categorias"
             >
-                <Column field="name" header="Categoria" style="min-width: 190px"><template #body="{ data }"><strong>{{ data.name }}</strong></template></Column>
-                <Column field="slug" header="Slug" style="min-width: 170px"><template #body="{ data }"><code>{{ data.slug }}</code></template></Column>
-                <Column field="description" header="Descrição" style="min-width: 260px; max-width: 300px"><template #body="{ data }"><span class="text-muted text-truncate d-block" v-tooltip.top="data.description || null">{{ data.description || '-' }}</span></template></Column>
-                <Column field="status" header="Status" style="width: 100px"><template #body="{ data }"><Tag :value="data.status === 'active' ? 'Ativa' : 'Inativa'" :severity="data.status === 'active' ? 'success' : 'secondary'" /></template></Column>
-                <Column style="width: 110px"><template #header><span class="w-100 text-center fw-semibold">Ações</span></template><template #body="{ data }">
-                    <div class="d-flex justify-content-center gap-1">
-                        <Button icon="pi pi-pen-to-square" variant="text" rounded :disabled="!canUpdate" @click="openDialog('form', data)" />
-                        <Button icon="pi pi-trash" variant="text" severity="danger" rounded :disabled="!canDelete" v-tooltip.left="'Excluir categoria'" @click="openDialog('delete', data)" />
-                    </div>
-                </template></Column>
+                <Column field="name" header="Categoria" style="min-width: 190px">
+                    <template #body="{ data }">
+                        <strong>{{ data.name }}</strong>
+                    </template>
+                </Column>
+                <Column field="slug" header="Slug" style="min-width: 170px">
+                    <template #body="{ data }">
+                        <code>{{ data.slug }}</code>
+                    </template>
+                </Column>
+                <Column field="description" header="Descrição" style="min-width: 260px; max-width: 300px">
+                    <template #body="{ data }">
+                        <span class="text-muted text-truncate d-block" v-tooltip.top="data.description || null">
+                            {{ data.description || '-' }}
+                        </span>
+                    </template>
+                </Column>
+                <Column field="status" header="Status" style="width: 100px">
+                    <template #body="{ data }">
+                        <Tag
+                            :value="data.status === 'active' ? 'Ativa' : 'Inativa'"
+                            :severity="data.status === 'active' ? 'success' : 'secondary'"
+                        />
+                    </template>
+                </Column>
+                <Column style="width: 110px">
+                    <template #header>
+                        <span class="w-100 text-center fw-semibold">Ações</span>
+                    </template>
+                    <template #body="{ data }">
+                        <div class="d-flex justify-content-center gap-1">
+                            <Button icon="pi pi-pen-to-square" variant="text" rounded :disabled="!canUpdate" @click="openDialog('form', data)" />
+                            <Button icon="pi pi-trash" variant="text" severity="danger" rounded :disabled="!canDelete" v-tooltip.left="'Excluir categoria'" @click="openDialog('delete', data)" />
+                        </div>
+                    </template>
+                </Column>
             </DataTable>
             <EmptyData v-if="!loading && !categories.length" @clean-filters="clearFilters" :show-btn-clean-filters="true" />
         </template></Card>

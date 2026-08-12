@@ -36,6 +36,11 @@ class Permission extends Model
     public const ESTABLISHMENTS_UPDATE = 'establishments.update';
     public const ESTABLISHMENTS_DELETE = 'establishments.delete';
 
+    public const SCREENS_VIEW = 'screens.view';
+    public const SCREENS_CREATE = 'screens.create';
+    public const SCREENS_UPDATE = 'screens.update';
+    public const SCREENS_DELETE = 'screens.delete';
+
     public const SUPPORT_USERS_VIEW   = 'support-users.view';
     public const SUPPORT_USERS_CREATE = 'support-users.create';
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
@@ -156,6 +161,30 @@ class Permission extends Model
                 'group' => 'establishments',
                 'group_label' => 'Estabelecimentos',
                 'description' => 'Permite excluir estabelecimentos parceiros.',
+            ],
+            self::SCREENS_VIEW => [
+                'name' => 'Visualizar telas',
+                'group' => 'screens',
+                'group_label' => 'Telas',
+                'description' => 'Permite consultar as telas instaladas nos estabelecimentos parceiros.',
+            ],
+            self::SCREENS_CREATE => [
+                'name' => 'Criar telas',
+                'group' => 'screens',
+                'group_label' => 'Telas',
+                'description' => 'Permite cadastrar novas telas na plataforma.',
+            ],
+            self::SCREENS_UPDATE => [
+                'name' => 'Editar telas',
+                'group' => 'screens',
+                'group_label' => 'Telas',
+                'description' => 'Permite alterar configurações e o status das telas.',
+            ],
+            self::SCREENS_DELETE => [
+                'name' => 'Excluir telas',
+                'group' => 'screens',
+                'group_label' => 'Telas',
+                'description' => 'Permite excluir telas da plataforma.',
             ],
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',

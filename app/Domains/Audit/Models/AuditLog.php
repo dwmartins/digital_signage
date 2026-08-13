@@ -39,7 +39,15 @@ class AuditLog extends Model
 
     public const MODULE_DISPLAY_POINTS = 'display_points';
 
+    public const MODULE_MEDIA = 'media';
+
+    public const MODULE_CAMPAIGNS = 'campaigns';
+
     public const MODULE_PLANS = 'plans';
+
+    public const MODULE_SUBSCRIPTIONS = 'subscriptions';
+
+    public const MODULE_TRANSACTIONS = 'transactions';
 
     public const MODULE_PROFILE = 'profile';
 
@@ -82,7 +90,11 @@ class AuditLog extends Model
             ['label' => 'Telas', 'value' => self::MODULE_SCREENS],
             ['label' => 'Players (PC)', 'value' => self::MODULE_PLAYERS],
             ['label' => 'Pontos de exibição', 'value' => self::MODULE_DISPLAY_POINTS],
+            ['label' => 'Biblioteca de mídias', 'value' => self::MODULE_MEDIA],
+            ['label' => 'Campanhas', 'value' => self::MODULE_CAMPAIGNS],
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
+            ['label' => 'Assinaturas', 'value' => self::MODULE_SUBSCRIPTIONS],
+            ['label' => 'Transações', 'value' => self::MODULE_TRANSACTIONS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],
             ['label' => 'Permissões', 'value' => self::MODULE_PERMISSIONS],

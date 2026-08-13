@@ -5,7 +5,18 @@ export const platformNavItems = [
         label: 'Campanha',
         icon: 'pi pi-megaphone',
         children: [
+            { label: 'Campanhas', icon: 'pi pi-megaphone', to: '/platform/campanhas', permission: 'campaigns.view' },
             { label: 'Categorias', icon: 'pi pi-tags', to: '/platform/categorias', permission: 'categories.view' },
+            { label: 'Biblioteca de mídias', icon: 'pi pi-images', to: '/platform/midias', permission: 'media.view' },
+        ],
+    },
+    {
+        label: 'Comercial',
+        icon: 'pi pi-wallet',
+        children: [
+            { label: 'Planos', icon: 'pi pi-box', to: '/platform/planos', permission: 'plans.view' },
+            { label: 'Assinaturas', icon: 'pi pi-file-check', to: '/platform/assinaturas', permission: 'subscriptions.view' },
+            { label: 'Transações', icon: 'pi pi-receipt', to: '/platform/transacoes', permission: 'transactions.view' },
         ],
     },
     {

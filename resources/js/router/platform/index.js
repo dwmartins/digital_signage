@@ -6,6 +6,9 @@ import establishments from './establishments';
 import screens from './screens';
 import players from './players';
 import displayPoints from './displayPoints';
+import media from './media';
+import commercial from './commercial';
+import campaigns from './campaigns';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -39,7 +42,10 @@ export default [
             ...establishments,
             ...screens,
             ...players,
-            ...displayPoints
+            ...displayPoints,
+            ...media,
+            ...campaigns,
+            ...commercial
         ]
     }
 ];

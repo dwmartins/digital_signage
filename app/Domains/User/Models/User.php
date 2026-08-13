@@ -5,6 +5,7 @@ namespace App\Domains\User\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Domains\Appearance\Models\UserAppearanceSetting;
+use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Permission\Models\Permission;
 use App\Domains\User\Observers\UserObserver;
 use Database\Factories\UserFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -45,11 +47,15 @@ class User extends Authenticatable
     protected ?array $permissionSlugCache = null;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_INACTIVE = 'inactive';
+
     public const STATUS_BLOCKED = 'blocked';
 
     public const ROLE_ADMIN = 'admin';
+
     public const ROLE_SUPPORT = 'support';
+
     public const ROLE_CUSTOMER = 'customer';
 
     const AVATAR_PATH = 'images/avatars';
@@ -93,6 +99,14 @@ class User extends Authenticatable
     public function appearanceSetting(): HasOne
     {
         return $this->hasOne(UserAppearanceSetting::class);
+    }
+
+    /**
+     * Mídias pertencentes ao cliente anunciante.
+     */
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(MediaAsset::class);
     }
 
     /*
@@ -271,7 +285,7 @@ class User extends Authenticatable
      */
     public function hasPlatformPermission(string $permission): bool
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return false;
         }
 

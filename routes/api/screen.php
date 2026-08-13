@@ -3,11 +3,11 @@
 use App\Domains\Screen\Controllers\ScreenController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->group(function() {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/screens', [ScreenController::class, 'index'])
         ->middleware(['platform:screens.view']);
 
-    Route::get('/screens/establishment-options', [ScreenController::class, 'establishmentOptions'])
+    Route::get('/screens/filter-options', [ScreenController::class, 'filterOptions'])
         ->middleware(['platform:screens.view']);
 
     Route::post('/screens', [ScreenController::class, 'store'])

@@ -7,8 +7,6 @@ import { computed, reactive, ref, watch } from 'vue';
 const props = defineProps({ modelValue: Boolean, screen: Object });
 const emit = defineEmits(['update:modelValue', 'saved']);
 const saving = ref(false);
-const loadingEstablishments = ref(false);
-const establishments = ref([]);
 const fieldErrors = reactive({});
 const statusOptions = [
     { label: 'Ativa', value: 'active' },
@@ -27,10 +25,8 @@ const resolutionOptions = [
 ];
 const defaults = () => ({
     id: null,
-    establishment_id: null,
     name: '',
     code: '',
-    location: '',
     brand: '',
     model: '',
     screen_size: null,
@@ -38,13 +34,11 @@ const defaults = () => ({
     resolution_width: 1920,
     resolution_height: 1080,
     status: 'active',
-    heartbeat_interval: 60,
     notes: '',
 });
 const form = reactive(defaults());
 const visible = computed({ get: () => props.modelValue, set: value => emit('update:modelValue', value) });
 const isUpdate = computed(() => !!props.screen?.id);
-const selectedEstablishment = computed(() => establishments.value.find(item => item.id === form.establishment_id));
 const selectedResolution = computed({
     get: () => resolutionOptions.find(option => option.width === form.resolution_width && option.height === form.resolution_height) ?? null,
     set: option => {
@@ -61,18 +55,6 @@ const generateCode = () => {
     form.code = `TELA-${suffix}`;
 };
 
-const fetchEstablishments = async () => {
-    try {
-        loadingEstablishments.value = true;
-        const response = await screenService.establishmentOptions();
-        establishments.value = response.data ?? [];
-    } catch (error) {
-        showAlert('error', error.response?.data);
-    } finally {
-        loadingEstablishments.value = false;
-    }
-};
-
 const onSubmit = async () => {
     const required = [
         { id: 'name', label: 'Nome' },
@@ -81,7 +63,6 @@ const onSubmit = async () => {
         { id: 'resolution_width', label: 'Largura' },
         { id: 'resolution_height', label: 'Altura' },
         { id: 'status', label: 'Status' },
-        { id: 'heartbeat_interval', label: 'Intervalo de comunicação' },
     ];
     if (!validateForm(form, required, fieldErrors)) return;
 
@@ -103,11 +84,9 @@ const onSubmit = async () => {
 watch(() => props.modelValue, opened => {
     if (!opened) return;
     Object.assign(form, defaults(), props.screen ?? {});
-    form.establishment_id = form.establishment_id ? Number(form.establishment_id) : null;
     form.screen_size = form.screen_size === null ? null : Number(form.screen_size);
     Object.keys(fieldErrors).forEach(key => delete fieldErrors[key]);
     generateCode();
-    fetchEstablishments();
 });
 </script>
 
@@ -119,21 +98,6 @@ watch(() => props.modelValue, opened => {
             </div>
 
             <div class="col-12"><Divider align="left"><b>Identificação</b></Divider></div>
-            <div class="col-md-7"><div class="field">
-                <label>Estabelecimento</label>
-                <Select v-model="form.establishment_id" :options="establishments" optionLabel="name" optionValue="id" filter showClear placeholder="Sem vínculo" :loading="loadingEstablishments" fluid>
-                    <template #option="{ option }">
-                        <div class="d-flex flex-column">
-                            <span>#{{ option.id }} - {{ option.name }}</span>
-                            <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
-                        </div>
-                    </template>
-                    <template #value="{ value, placeholder }">
-                        <span v-if="value">#{{ selectedEstablishment?.id }} - {{ selectedEstablishment?.name }}</span>
-                        <span v-else>{{ placeholder }}</span>
-                    </template>
-                </Select>
-            </div></div>
             <div class="col-md-5"><div class="field">
                 <label>Status</label>
                 <Select v-model="form.status" :options="statusOptions" optionLabel="label" optionValue="value" fluid />
@@ -145,10 +109,6 @@ watch(() => props.modelValue, opened => {
             <div class="col-md-5"><div class="field">
                 <label><span class="text-danger me-1">*</span>Código único</label>
                 <InputText v-model="form.code" maxlength="64" :invalid="!!fieldErrors.code" fluid @input="form.code = form.code.toUpperCase(); clearError('code')" />
-            </div></div>
-            <div class="col-12"><div class="field">
-                <label>Local de instalação</label>
-                <InputText v-model="form.location" placeholder="Ex.: Entrada principal, próximo ao caixa" maxlength="255" fluid />
             </div></div>
 
             <div class="col-12"><Divider align="left"><b>Equipamento</b></Divider></div>
@@ -170,16 +130,6 @@ watch(() => props.modelValue, opened => {
             <div class="col-md-4"><div class="field"><label>Resolução padrão</label><Select v-model="selectedResolution" :options="resolutionOptions" optionLabel="label" placeholder="Personalizada" showClear fluid /></div></div>
             <div class="col-6 col-md-2"><div class="field"><label>Largura</label><InputNumber v-model="form.resolution_width" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
             <div class="col-6 col-md-2"><div class="field"><label>Altura</label><InputNumber v-model="form.resolution_height" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
-            <div class="col-md-5"><div class="field">
-                <label class="d-flex align-items-center gap-2">
-                    Comunicação a cada (segundos)
-                    <i
-                        class="pi pi-question-circle text-muted cursor-help"
-                        v-tooltip.top="'Intervalo esperado entre as conexões da tela com a plataforma. Se esse prazo for ultrapassado, ela será indicada como sem conexão.'"
-                    ></i>
-                </label>
-                <InputNumber v-model="form.heartbeat_interval" :min="15" :max="3600" :useGrouping="false" fluid />
-            </div></div>
             <div class="col-12"><div class="field"><label>Observações</label><Textarea v-model="form.notes" rows="4" maxlength="5000" autoResize fluid /></div></div>
         </form>
 

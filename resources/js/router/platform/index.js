@@ -4,6 +4,8 @@ import customerUsers from './customerUsers';
 import categories from './categories';
 import establishments from './establishments';
 import screens from './screens';
+import players from './players';
+import displayPoints from './displayPoints';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -35,7 +37,9 @@ export default [
             ...customerUsers,
             ...categories,
             ...establishments,
-            ...screens
+            ...screens,
+            ...players,
+            ...displayPoints
         ]
     }
 ];

@@ -5,25 +5,25 @@ import Breadcrumb from '@/components/shared/Breadcrumb.vue';
 import EmptyData from '@/components/shared/EmptyData.vue';
 import TableSkeleton from '@/components/shared/TableSkeleton.vue';
 import { useQueryFilters } from '@/composables/useQueryFilters';
-import { formatDateTime } from '@/helpers/date';
 import { showAlert } from '@/helpers/alert';
 import screenService from '@/services/screen.service';
 import { useAuthStore } from '@/stores/authStore';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 const authStore = useAuthStore();
 const screens = ref([]);
 const screen = ref(null);
 const establishments = ref([]);
+const displayPoints = ref([]);
 const loading = ref(false);
-const refreshing = ref(false);
 const pagination = ref({});
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
-const dialogs = reactive({ form: false, delete: false });
+const dialogs = reactive({ form: false, delete: false, filters: false });
 const filters = reactive({
     global: { value: null, type: 'string' },
     establishment_id: { value: null, type: 'number' },
+    display_point_id: { value: null, type: 'number' },
     orientation: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
 });
@@ -43,45 +43,36 @@ const breadcrumbItens = [
 ];
 const skeletonColumns = [
     { headerWidth: '80px', bodyWidth: '180px' },
-    { headerWidth: '110px', bodyWidth: '180px' },
     { headerWidth: '80px', bodyWidth: '140px' },
     { headerWidth: '80px', bodyWidth: '130px' },
-    { headerWidth: '80px', bodyWidth: '120px' },
     { headerWidth: '60px', bodyWidth: '75px', height: '22px', borderRadius: '999px' },
-    { headerWidth: '80px', bodyWidth: '120px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
 const canCreate = computed(() => authStore.hasPermission('screens.create'));
 const canUpdate = computed(() => authStore.hasPermission('screens.update'));
 const canDelete = computed(() => authStore.hasPermission('screens.delete'));
-const selectedFilterEstablishment = computed(() => establishments.value.find(item => item.id === filters.establishment_id.value));
+const activeFiltersCount = computed(() => Object.values(filters)
+    .filter(filter => filter.value !== null && filter.value !== undefined && filter.value !== '')
+    .length);
+const filtersButtonLabel = computed(() => activeFiltersCount.value ? `Filtros (${activeFiltersCount.value})` : 'Filtros');
+const filteredDisplayPoints = computed(() => {
+    if (!filters.establishment_id.value) return displayPoints.value;
+    return displayPoints.value.filter(item => item.establishment_id === filters.establishment_id.value);
+});
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
-let refreshInterval = null;
 
-const fetchAll = async (page, silent = false) => {
-    if (loading.value || refreshing.value) return;
-
-    if (!silent) syncToRoute(page);
-
+const fetchAll = async page => {
+    syncToRoute(page);
     try {
-        silent ? refreshing.value = true : loading.value = true;
+        loading.value = true;
         const response = await screenService.index(page, itemsPerPage.value, buildApiFilters());
         screens.value = response.data ?? [];
         pagination.value = response.pagination ?? {};
         currentPage.value = response.pagination?.current_page ?? 1;
     } catch (error) {
-        if (!silent) showAlert('error', error.response?.data);
-    } finally {
-        silent ? refreshing.value = false : loading.value = false;
-    }
-};
-
-const fetchEstablishments = async () => {
-    try {
-        const response = await screenService.establishmentOptions();
-        establishments.value = response.data ?? [];
-    } catch (error) {
         showAlert('error', error.response?.data);
+    } finally {
+        loading.value = false;
     }
 };
 
@@ -92,8 +83,31 @@ const openDialog = (type, data = null) => {
     dialogs[type] = true;
 };
 
+const fetchFilterOptions = async () => {
+    try {
+        const response = await screenService.filterOptions();
+        establishments.value = response.establishments ?? [];
+        displayPoints.value = response.display_points ?? [];
+    } catch (error) {
+        showAlert('error', error.response?.data);
+    }
+};
+
+const onEstablishmentChange = () => {
+    const selectedPoint = displayPoints.value.find(item => item.id === filters.display_point_id.value);
+    if (selectedPoint && selectedPoint.establishment_id !== filters.establishment_id.value) {
+        filters.display_point_id.value = null;
+    }
+};
+
 const clearFilters = () => {
     Object.values(filters).forEach(filter => filter.value = null);
+    dialogs.filters = false;
+    fetchAll(1);
+};
+
+const applyMobileFilters = () => {
+    dialogs.filters = false;
     fetchAll(1);
 };
 
@@ -105,46 +119,33 @@ const onPage = event => {
 const statusLabel = status => statusOptions.find(option => option.value === status)?.label ?? '-';
 const statusSeverity = status => ({ active: 'success', maintenance: 'warn', blocked: 'danger', stock: 'contrast' })[status] ?? 'secondary';
 const orientationLabel = orientation => orientationOptions.find(option => option.value === orientation)?.label ?? '-';
-const connectionDelay = seconds => {
-    if (seconds < 60) return `${seconds} segundo${seconds === 1 ? '' : 's'}`;
-
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} minuto${minutes === 1 ? '' : 's'}`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hora${hours === 1 ? '' : 's'}`;
-
-    const days = Math.floor(hours / 24);
-    return `${days} dia${days === 1 ? '' : 's'}`;
-};
-const connectionLabel = data => {
-    if (data.connection_status === 'online') return 'Online';
-    if (data.connection_status === 'never_connected') return 'Nunca conectada';
-    return `Sem conexão há ${connectionDelay(data.connection_delay_seconds)}`;
-};
-const connectionSeverity = status => status === 'online' ? 'success' : (status === 'never_connected' ? 'secondary' : 'danger');
 
 onMounted(() => {
     applyFromRoute();
-    fetchEstablishments();
+    fetchFilterOptions();
     fetchAll(currentPage.value);
-
-    refreshInterval = window.setInterval(() => {
-        fetchAll(currentPage.value, true);
-    }, 60000);
 });
-
-onUnmounted(() => window.clearInterval(refreshInterval));
 </script>
 
 <template>
     <section class="container">
-        <Breadcrumb :items="breadcrumbItens" />
-        <div class="d-flex justify-content-end mb-3">
-            <Button label="Nova tela" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="openDialog('form')" />
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+            <Breadcrumb :items="breadcrumbItens" />
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                <Button
+                    class="d-inline-flex d-md-none"
+                    :label="filtersButtonLabel"
+                    icon="pi pi-filter"
+                    size="small"
+                    severity="secondary"
+                    outlined
+                    @click="dialogs.filters = true"
+                />
+                <Button label="Nova tela" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="openDialog('form')" />
+            </div>
         </div>
 
-        <Card class="mb-3">
+        <Card class="mb-3 d-none d-md-block">
             <template #content>
                 <form class="row g-3 align-items-end" @submit.prevent="fetchAll(1)">
                     <div class="col-lg-3">
@@ -154,13 +155,13 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                                 <InputIcon class="pi pi-search" />
                                 <InputText
                                     v-model="filters.global.value"
-                                    placeholder="Nome, código ou local"
+                                    placeholder="Nome, código, marca ou modelo"
                                     fluid
                                 />
                             </IconField>
                         </div>
                     </div>
-                    <div class="col-md-4 col-lg-3">
+                    <div class="col-md-6 col-lg-3">
                         <div class="field">
                             <label>Estabelecimento</label>
                             <Select
@@ -172,6 +173,7 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                                 showClear
                                 filter
                                 fluid
+                                @change="onEstablishmentChange"
                             >
                                 <template #option="{ option }">
                                     <div class="d-flex flex-column">
@@ -179,10 +181,23 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                                         <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
                                     </div>
                                 </template>
-                                <template #value="{ value, placeholder }">
-                                    <span v-if="value">#{{ selectedFilterEstablishment?.id }} - {{ selectedFilterEstablishment?.name }}</span>
-                                    <span v-else>{{ placeholder }}</span>
-                                </template>
+                            </Select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div class="field">
+                            <label>Ponto de exibição</label>
+                            <Select
+                                v-model="filters.display_point_id.value"
+                                :options="filteredDisplayPoints"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todos"
+                                showClear
+                                filter
+                                fluid
+                            >
+                                <template #option="{ option }">#{{ option.id }} - {{ option.name }}</template>
                             </Select>
                         </div>
                     </div>
@@ -235,6 +250,64 @@ onUnmounted(() => window.clearInterval(refreshInterval));
             </template>
         </Card>
 
+        <Dialog
+            v-model:visible="dialogs.filters"
+            modal
+            header="Filtrar telas"
+            :style="{ width: '32rem' }"
+            :breakpoints="{ '768px': '94vw' }"
+            :draggable="false"
+        >
+            <form id="screenMobileFiltersForm" class="row g-3" @submit.prevent="applyMobileFilters">
+                <div class="col-12">
+                    <div class="field">
+                        <label>Buscar</label>
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText v-model="filters.global.value" placeholder="Nome, código, marca ou modelo" fluid />
+                        </IconField>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Estabelecimento</label>
+                        <Select v-model="filters.establishment_id.value" :options="establishments" optionLabel="name" optionValue="id" placeholder="Todos" showClear filter fluid @change="onEstablishmentChange">
+                            <template #option="{ option }">
+                                <div class="d-flex flex-column">
+                                    <span>#{{ option.id }} - {{ option.name }}</span>
+                                    <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
+                                </div>
+                            </template>
+                        </Select>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Ponto de exibição</label>
+                        <Select v-model="filters.display_point_id.value" :options="filteredDisplayPoints" optionLabel="name" optionValue="id" placeholder="Todos" showClear filter fluid>
+                            <template #option="{ option }">#{{ option.id }} - {{ option.name }}</template>
+                        </Select>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Status</label>
+                        <Select v-model="filters.status.value" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Todos" showClear fluid />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Orientação</label>
+                        <Select v-model="filters.orientation.value" :options="orientationOptions" optionLabel="label" optionValue="value" placeholder="Todas" showClear fluid />
+                    </div>
+                </div>
+            </form>
+            <template #footer>
+                <Button label="Limpar" icon="pi pi-filter-slash" severity="secondary" outlined :loading="loading" @click="clearFilters" />
+                <Button label="Aplicar filtros" icon="pi pi-search" :loading="loading" type="submit" form="screenMobileFiltersForm" />
+            </template>
+        </Dialog>
+
         <Card><template #content>
             <TableSkeleton v-show="loading" :rows="itemsPerPage" :columns="skeletonColumns" class="mt-2 screens-table-skeleton" />
             <DataTable
@@ -256,12 +329,9 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                         </div>
                     </template>
                 </Column>
-                <Column header="Estabelecimento" style="min-width: 210px">
+                <Column header="Ponto de exibição" style="min-width: 190px">
                     <template #body="{ data }">
-                        <div class="d-flex flex-column">
-                            <span>{{ data.establishment?.name || '-' }}</span>
-                            <small class="text-muted">{{ data.location || 'Local não informado' }}</small>
-                        </div>
+                        {{ data.display_point?.name || 'Não vinculada' }}
                     </template>
                 </Column>
                 <Column header="Configuração" style="min-width: 155px">
@@ -272,22 +342,9 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                         </div>
                     </template>
                 </Column>
-                <Column header="Comunicação" style="min-width: 145px">
-                    <template #body="{ data }">
-                        A cada {{ data.heartbeat_interval }} segundos
-                    </template>
-                </Column>
                 <Column field="status" header="Status" style="width: 120px">
                     <template #body="{ data }">
                         <Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)" />
-                    </template>
-                </Column>
-                <Column header="Conectividade" style="min-width: 210px">
-                    <template #body="{ data }">
-                        <div class="d-flex flex-column align-items-start gap-1">
-                            <Tag :value="connectionLabel(data)" :severity="connectionSeverity(data.connection_status)" />
-                            <small class="text-muted">Última: {{ formatDateTime(data.last_seen_at) }}</small>
-                        </div>
                     </template>
                 </Column>
                 <Column style="width: 110px">
@@ -312,7 +369,7 @@ onUnmounted(() => window.clearInterval(refreshInterval));
 
 <style scoped>
 :deep(.screens-table-skeleton) {
-    --table-skeleton-columns: minmax(210px, 1.2fr) minmax(210px, 1.1fr) 155px 155px 145px 120px 210px 110px;
-    --table-skeleton-min-width: 1275px;
+    --table-skeleton-columns: minmax(210px, 1.2fr) 190px 155px 155px 120px 110px;
+    --table-skeleton-min-width: 940px;
 }
 </style>

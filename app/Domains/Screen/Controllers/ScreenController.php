@@ -4,6 +4,7 @@ namespace App\Domains\Screen\Controllers;
 
 use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Audit\Services\AuditLogger;
+use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Establishment\Models\Establishment;
 use App\Domains\Screen\Models\Screen;
 use App\Domains\Screen\Requests\ScreenRequest;
@@ -22,6 +23,7 @@ class ScreenController extends Controller
         $validated = $request->validate([
             'global' => ['nullable', 'string', 'max:255'],
             'establishment_id' => ['nullable', 'integer', 'exists:establishments,id'],
+            'display_point_id' => ['nullable', 'integer', 'exists:display_points,id'],
             'orientation' => ['nullable', Rule::in([
                 Screen::ORIENTATION_LANDSCAPE,
                 Screen::ORIENTATION_PORTRAIT,
@@ -36,21 +38,29 @@ class ScreenController extends Controller
             'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = Screen::query()->with('establishment:id,name');
+        $query = Screen::query()->with('displayPoint:id,screen_id,name');
 
         if ($search = $validated['global'] ?? null) {
             $query->where(function ($query) use ($search): void {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('location', 'like', "%{$search}%")
-                    ->orWhereHas('establishment', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+                    ->orWhere('model', 'like', "%{$search}%")
+                    ->orWhere('brand', 'like', "%{$search}%");
             });
         }
 
-        foreach (['establishment_id', 'orientation', 'status'] as $field) {
+        foreach (['orientation', 'status'] as $field) {
             if ($value = $validated[$field] ?? null) {
                 $query->where($field, $value);
             }
+        }
+
+        if ($establishmentId = $validated['establishment_id'] ?? null) {
+            $query->whereHas('displayPoint', fn ($query) => $query->where('establishment_id', $establishmentId));
+        }
+
+        if ($displayPointId = $validated['display_point_id'] ?? null) {
+            $query->whereHas('displayPoint', fn ($query) => $query->whereKey($displayPointId));
         }
 
         $screens = $query
@@ -69,16 +79,14 @@ class ScreenController extends Controller
     }
 
     /**
-     * Retorna os estabelecimentos disponíveis para seleção.
+     * Retorna as opções utilizadas nos filtros de telas.
      */
-    public function establishmentOptions(): JsonResponse
+    public function filterOptions(): JsonResponse
     {
-        $establishments = Establishment::query()
-            ->where('status', '!=', Establishment::STATUS_BLOCKED)
-            ->orderBy('name')
-            ->get(['id', 'name', 'city', 'state', 'status']);
-
-        return response()->json(['data' => $establishments]);
+        return response()->json([
+            'establishments' => Establishment::query()->orderBy('name')->get(['id', 'name', 'city', 'state']),
+            'display_points' => DisplayPoint::query()->orderBy('name')->get(['id', 'establishment_id', 'name']),
+        ]);
     }
 
     /**
@@ -87,7 +95,7 @@ class ScreenController extends Controller
     public function store(ScreenRequest $request): JsonResponse
     {
         $screen = Screen::query()->create($request->validated());
-        $screen->load('establishment:id,name');
+        $screen->load('displayPoint:id,screen_id,name');
 
         AuditLogger::record(
             module: AuditLog::MODULE_SCREENS,
@@ -117,7 +125,7 @@ class ScreenController extends Controller
 
         $oldValues = $screen->only(array_keys($request->validated()));
         $screen->update($request->validated());
-        $screen->load('establishment:id,name');
+        $screen->load('displayPoint:id,screen_id,name');
 
         AuditLogger::record(
             module: AuditLog::MODULE_SCREENS,

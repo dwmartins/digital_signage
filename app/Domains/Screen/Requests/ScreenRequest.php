@@ -2,7 +2,6 @@
 
 namespace App\Domains\Screen\Requests;
 
-use App\Domains\Establishment\Models\Establishment;
 use App\Domains\Screen\Models\Screen;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,12 +21,6 @@ class ScreenRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'establishment_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('establishments', 'id')
-                    ->where(fn ($query) => $query->where('status', '!=', Establishment::STATUS_BLOCKED)),
-            ],
             'name' => ['required', 'string', 'max:255'],
             'code' => [
                 'required',
@@ -36,7 +29,6 @@ class ScreenRequest extends FormRequest
                 'regex:/^[A-Z0-9][A-Z0-9_-]*$/',
                 Rule::unique('screens', 'code')->ignore($this->route('id')),
             ],
-            'location' => ['nullable', 'string', 'max:255'],
             'brand' => ['nullable', 'string', 'max:255'],
             'model' => ['nullable', 'string', 'max:255'],
             'screen_size' => ['nullable', 'numeric', 'min:1', 'max:999.9'],
@@ -52,7 +44,6 @@ class ScreenRequest extends FormRequest
                 Screen::STATUS_BLOCKED,
                 Screen::STATUS_STOCK,
             ])],
-            'heartbeat_interval' => ['required', 'integer', 'min:15', 'max:3600'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
@@ -62,7 +53,6 @@ class ScreenRequest extends FormRequest
         $this->merge([
             'name' => trim((string) $this->input('name')),
             'code' => strtoupper(trim((string) $this->input('code'))),
-            'location' => $this->filled('location') ? trim((string) $this->input('location')) : null,
             'brand' => $this->filled('brand') ? trim((string) $this->input('brand')) : null,
             'model' => $this->filled('model') ? trim((string) $this->input('model')) : null,
         ]);

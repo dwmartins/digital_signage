@@ -8,17 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('screens', function (Blueprint $table) {
+        Schema::create('players', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('code', 64)->unique();
+            $table->string('hostname')->nullable();
             $table->string('brand')->nullable();
             $table->string('model')->nullable();
-            $table->decimal('screen_size', 5, 1)->nullable();
-            $table->string('orientation', 16)->default('landscape');
-            $table->unsignedSmallInteger('resolution_width')->default(1920);
-            $table->unsignedSmallInteger('resolution_height')->default(1080);
+            $table->string('operating_system')->nullable();
+            $table->string('architecture', 32)->nullable();
+            $table->unsignedInteger('memory_mb')->nullable();
+            $table->unsignedInteger('storage_mb')->nullable();
             $table->string('status', 32)->default('active')->index();
+            $table->timestamp('last_seen_at')->nullable()->index();
+            $table->ipAddress('ip_address')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
         });
@@ -26,6 +29,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('screens');
+        Schema::dropIfExists('players');
     }
 };

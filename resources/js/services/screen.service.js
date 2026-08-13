@@ -17,13 +17,9 @@ export default {
         return response.data;
     },
 
-    /**
-     * Retorna os estabelecimentos disponíveis para seleção.
-     *
-     * @returns {Promise<{data: Object[]}>}
-     */
-    async establishmentOptions() {
-        const response = await axios.get(`${API_URL}/screens/establishment-options`);
+    /** Retorna estabelecimentos e pontos disponíveis nos filtros. */
+    async filterOptions() {
+        const response = await axios.get(`${API_URL}/screens/filter-options`);
         return response.data;
     },
 

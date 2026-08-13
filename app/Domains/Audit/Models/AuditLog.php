@@ -26,24 +26,45 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AuditLog extends Model
 {
     public const MODULE_AUTH = 'auth';
+
     public const MODULE_CUSTOMERS = 'customers';
+
     public const MODULE_CATEGORIES = 'categories';
+
     public const MODULE_ESTABLISHMENTS = 'establishments';
+
     public const MODULE_SCREENS = 'screens';
+
+    public const MODULE_PLAYERS = 'players';
+
+    public const MODULE_DISPLAY_POINTS = 'display_points';
+
     public const MODULE_PLANS = 'plans';
+
     public const MODULE_PROFILE = 'profile';
+
     public const MODULE_SUPPORT_USERS = 'support_users';
+
     public const MODULE_PERMISSIONS = 'permissions';
+
     public const MODULE_USERS = 'users';
 
     public const ACTION_CREATED = 'Criado';
+
     public const ACTION_UPDATED = 'Atualizado';
+
     public const ACTION_DELETED = 'Excluído';
+
     public const ACTION_LOGIN = 'Login';
+
     public const ACTION_LOGIN_FAILED = 'Login falhado';
+
     public const ACTION_LOGOUT = 'Logout';
+
     public const ACTION_PASSWORD_UPDATED = 'Senha alterada';
+
     public const ACTION_AVATAR_UPDATED = 'Avatar alterado';
+
     public const ACTION_PERMISSIONS_UPDATED = 'Permissões alteradas';
 
     /**
@@ -59,6 +80,8 @@ class AuditLog extends Model
             ['label' => 'Categorias', 'value' => self::MODULE_CATEGORIES],
             ['label' => 'Estabelecimentos', 'value' => self::MODULE_ESTABLISHMENTS],
             ['label' => 'Telas', 'value' => self::MODULE_SCREENS],
+            ['label' => 'Players (PC)', 'value' => self::MODULE_PLAYERS],
+            ['label' => 'Pontos de exibição', 'value' => self::MODULE_DISPLAY_POINTS],
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],

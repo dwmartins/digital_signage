@@ -20,31 +20,64 @@ class Permission extends Model
     | PERMISSÕES INTERNAS DA PLATAFORMA
     |--------------------------------------------------------------------------
     */
-    public const CUSTOMERS_VIEW   = 'customers.view';
+    public const CUSTOMERS_VIEW = 'customers.view';
+
     public const CUSTOMERS_CREATE = 'customers.create';
+
     public const CUSTOMERS_UPDATE = 'customers.update';
+
     public const CUSTOMERS_DELETE = 'customers.delete';
+
     public const CUSTOMERS_AUDIT_UPDATE = 'customers.audit.update';
 
     public const CATEGORIES_VIEW = 'categories.view';
+
     public const CATEGORIES_CREATE = 'categories.create';
+
     public const CATEGORIES_UPDATE = 'categories.update';
+
     public const CATEGORIES_DELETE = 'categories.delete';
 
     public const ESTABLISHMENTS_VIEW = 'establishments.view';
+
     public const ESTABLISHMENTS_CREATE = 'establishments.create';
+
     public const ESTABLISHMENTS_UPDATE = 'establishments.update';
+
     public const ESTABLISHMENTS_DELETE = 'establishments.delete';
 
     public const SCREENS_VIEW = 'screens.view';
+
     public const SCREENS_CREATE = 'screens.create';
+
     public const SCREENS_UPDATE = 'screens.update';
+
     public const SCREENS_DELETE = 'screens.delete';
 
-    public const SUPPORT_USERS_VIEW   = 'support-users.view';
+    public const PLAYERS_VIEW = 'players.view';
+
+    public const PLAYERS_CREATE = 'players.create';
+
+    public const PLAYERS_UPDATE = 'players.update';
+
+    public const PLAYERS_DELETE = 'players.delete';
+
+    public const DISPLAY_POINTS_VIEW = 'display-points.view';
+
+    public const DISPLAY_POINTS_CREATE = 'display-points.create';
+
+    public const DISPLAY_POINTS_UPDATE = 'display-points.update';
+
+    public const DISPLAY_POINTS_DELETE = 'display-points.delete';
+
+    public const SUPPORT_USERS_VIEW = 'support-users.view';
+
     public const SUPPORT_USERS_CREATE = 'support-users.create';
+
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
+
     public const SUPPORT_USERS_PERMISSIONS_UPDATE = 'support-users.permissions.update';
+
     public const SUPPORT_USERS_DELETE = 'support-users.delete';
 
     /**
@@ -186,6 +219,14 @@ class Permission extends Model
                 'group_label' => 'Telas',
                 'description' => 'Permite excluir telas da plataforma.',
             ],
+            self::PLAYERS_VIEW => ['name' => 'Visualizar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite consultar os computadores players.'],
+            self::PLAYERS_CREATE => ['name' => 'Criar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite cadastrar computadores players.'],
+            self::PLAYERS_UPDATE => ['name' => 'Editar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite alterar players e suas configurações.'],
+            self::PLAYERS_DELETE => ['name' => 'Excluir players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite excluir computadores players.'],
+            self::DISPLAY_POINTS_VIEW => ['name' => 'Visualizar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite consultar os pontos de exibição.'],
+            self::DISPLAY_POINTS_CREATE => ['name' => 'Criar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite criar vínculos entre locais, telas e players.'],
+            self::DISPLAY_POINTS_UPDATE => ['name' => 'Editar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite alterar os vínculos dos pontos de exibição.'],
+            self::DISPLAY_POINTS_DELETE => ['name' => 'Excluir pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite excluir pontos de exibição.'],
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',
                 'group' => 'users-support',

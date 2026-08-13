@@ -2,7 +2,7 @@
 
 namespace App\Domains\Establishment\Models;
 
-use App\Domains\Screen\Models\Screen;
+use App\Domains\DisplayPoint\Models\DisplayPoint;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +30,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Establishment extends Model
 {
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_INACTIVE = 'inactive';
+
     public const STATUS_BLOCKED = 'blocked';
 
     protected function casts(): array
@@ -42,10 +44,10 @@ class Establishment extends Model
     }
 
     /**
-     * Telas instaladas no estabelecimento.
+     * Pontos de exibição instalados no estabelecimento.
      */
-    public function screens(): HasMany
+    public function displayPoints(): HasMany
     {
-        return $this->hasMany(Screen::class);
+        return $this->hasMany(DisplayPoint::class);
     }
 }

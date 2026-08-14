@@ -21,6 +21,7 @@ const loadingOptions = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 const pagination = ref({});
+
 const dialogs = reactive({
     form: false,
     preview: false,
@@ -28,26 +29,31 @@ const dialogs = reactive({
     delete: false,
     filters: false,
 });
+
 const filters = reactive({
     global: { value: null, type: "string" },
     user_id: { value: null, type: "number" },
     type: { value: null, type: "string" },
     approval_status: { value: null, type: "string" },
 });
+
 const typeOptions = [
     { label: "Imagem", value: "image" },
     { label: "Vídeo", value: "video" },
 ];
+
 const approvalOptions = [
     { label: "Aguardando aprovação", value: "pending_approval" },
     { label: "Aguardando assinatura", value: "awaiting_subscription" },
     { label: "Aprovada", value: "approved" },
     { label: "Rejeitada", value: "rejected" },
 ];
+
 const breadcrumbItems = [
     { icon: "pi pi-home", to: "/" },
     { label: "Biblioteca de mídias" },
 ];
+
 const skeletonColumns = [
     { headerWidth: "70px", bodyWidth: "170px" },
     { headerWidth: "85px", bodyWidth: "170px" },
@@ -72,21 +78,25 @@ const skeletonColumns = [
         align: "center",
     },
 ];
+
 const canCreate = computed(() => authStore.hasPermission("media.create"));
 const canUpdate = computed(() => authStore.hasPermission("media.update"));
 const canApprove = computed(() => authStore.hasPermission("media.approve"));
 const canDelete = computed(() => authStore.hasPermission("media.delete"));
+
 const activeFiltersCount = computed(
     () =>
         Object.values(filters).filter(
             (filter) => filter.value !== null && filter.value !== "",
         ).length,
 );
+
 const filtersButtonLabel = computed(() =>
     activeFiltersCount.value
         ? `Filtros (${activeFiltersCount.value})`
         : "Filtros",
 );
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
     filters,
     currentPage,

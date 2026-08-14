@@ -21,13 +21,16 @@ const loading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 const pagination = ref({});
+
 const dialogs = reactive({ form: false, delete: false, filters: false });
+
 const filters = reactive({
     global: { value: null, type: "string" },
     user_id: { value: null, type: "number" },
     category_id: { value: null, type: "number" },
     status: { value: null, type: "string" },
 });
+
 const statusOptions = [
     { label: "Rascunho", value: "draft" },
     { label: "Aguardando aprovação", value: "pending_approval" },
@@ -38,6 +41,7 @@ const statusOptions = [
     { label: "Concluída", value: "completed" },
     { label: "Cancelada", value: "cancelled" },
 ];
+
 const skeletonColumns = [
     { bodyWidth: "190px" },
     { bodyWidth: "170px" },
@@ -46,9 +50,11 @@ const skeletonColumns = [
     { bodyWidth: "110px" },
     { bodyWidth: "120px", align: "center" },
 ];
+
 const canCreate = computed(() => auth.hasPermission("campaigns.create"));
 const canUpdate = computed(() => auth.hasPermission("campaigns.update"));
 const canDelete = computed(() => auth.hasPermission("campaigns.delete"));
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
     filters,
     currentPage,

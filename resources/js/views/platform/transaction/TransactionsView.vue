@@ -7,37 +7,45 @@ import { showAlert } from "@/helpers/alert";
 import { formatDateTime } from "@/helpers/date";
 import transactionService from "@/services/transaction.service";
 import { onMounted, reactive, ref } from "vue";
-const items = ref([]),
-    loading = ref(false),
-    currentPage = ref(1),
-    perPage = ref(7),
-    pagination = ref({});
+
+const items = ref([]);
+const loading = ref(false);
+const currentPage = ref(1);
+const perPage = ref(7);
+const pagination = ref({});
+
 const filters = reactive({
     global: { value: null, type: "string" },
     status: { value: null, type: "string" },
     type: { value: null, type: "string" },
 });
+
 const statusOptions = [
-        { label: "Pendente", value: "pending" },
-        { label: "Paga", value: "paid" },
-        { label: "Falhou", value: "failed" },
-        { label: "Estornada", value: "refunded" },
-        { label: "Cancelada", value: "cancelled" },
-    ],
-    typeOptions = [
-        { label: "Cobrança", value: "charge" },
-        { label: "Estorno", value: "refund" },
-    ];
+    { label: "Pendente", value: "pending" },
+    { label: "Paga", value: "paid" },
+    { label: "Falhou", value: "failed" },
+    { label: "Estornada", value: "refunded" },
+    { label: "Cancelada", value: "cancelled" },
+];
+
+const typeOptions = [
+    { label: "Cobrança", value: "charge" },
+    { label: "Estorno", value: "refund" },
+];
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
     filters,
     currentPage,
 );
+
 const money = (v) =>
     new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL",
     }).format(v ?? 0);
+
 const label = (s) => statusOptions.find((x) => x.value === s)?.label ?? s;
+
 const severity = (s) =>
     ({
         pending: "warn",
@@ -46,6 +54,7 @@ const severity = (s) =>
         refunded: "info",
         cancelled: "secondary",
     })[s] ?? "secondary";
+
 const fetchAll = async (page = 1) => {
     syncToRoute(page);
     try {
@@ -64,14 +73,17 @@ const fetchAll = async (page = 1) => {
         loading.value = false;
     }
 };
+
 const clear = () => {
     Object.values(filters).forEach((x) => (x.value = null));
     fetchAll(1);
 };
+
 onMounted(() => {
     applyFromRoute();
     fetchAll(currentPage.value);
 });
+
 </script>
 <template>
     <section class="container">

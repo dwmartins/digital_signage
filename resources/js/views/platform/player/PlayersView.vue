@@ -18,18 +18,22 @@ const loading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 const pagination = ref({});
+
 const dialogs = reactive({ form: false, delete: false, filters: false });
 const filters = reactive({ global: '', establishment_id: null, display_point_id: null, status: null });
+
 const statusOptions = [
     { label: 'Ativo', value: 'active' },
     { label: 'Manutenção', value: 'maintenance' },
     { label: 'Bloqueado', value: 'blocked' },
     { label: 'Estoque', value: 'stock' },
 ];
+
 const breadcrumbItems = [
     { icon: 'pi pi-home', to: '/' },
     { label: 'Players (PC)' },
 ];
+
 const skeletonColumns = [
     { headerWidth: '60px', bodyWidth: '175px' },
     { headerWidth: '75px', bodyWidth: '120px' },
@@ -38,13 +42,17 @@ const skeletonColumns = [
     { headerWidth: '50px', bodyWidth: '75px', height: '22px', borderRadius: '999px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
+
 const canCreate = computed(() => authStore.hasPermission('players.create'));
 const canUpdate = computed(() => authStore.hasPermission('players.update'));
 const canDelete = computed(() => authStore.hasPermission('players.delete'));
+
 const activeFiltersCount = computed(() => Object.values(filters)
     .filter(value => value !== null && value !== undefined && value !== '')
     .length);
+
 const filtersButtonLabel = computed(() => activeFiltersCount.value ? `Filtros (${activeFiltersCount.value})` : 'Filtros');
+
 const filteredDisplayPoints = computed(() => {
     if (!filters.establishment_id) return displayPoints.value;
     return displayPoints.value.filter(item => item.establishment_id === filters.establishment_id);

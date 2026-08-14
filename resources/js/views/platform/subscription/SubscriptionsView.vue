@@ -10,36 +10,45 @@ import { formatDate } from "@/helpers/date";
 import subscriptionService from "@/services/subscription.service";
 import { useAuthStore } from "@/stores/authStore";
 import { computed, onMounted, reactive, ref } from "vue";
-const auth = useAuthStore(),
-    items = ref([]),
-    subscription = ref(null),
-    campaigns = ref([]),
-    plans = ref([]),
-    statusOptions = ref([]),
-    loading = ref(false),
-    currentPage = ref(1),
-    perPage = ref(7),
-    pagination = ref({});
+
+const auth = useAuthStore();
+
+const items = ref([]);
+const subscription = ref(null);
+const campaigns = ref([]);
+const plans = ref([]);
+const statusOptions = ref([]);
+const loading = ref(false);
+const currentPage = ref(1);
+const perPage = ref(7);
+const pagination = ref({});
+
 const dialogs = reactive({ form: false, approval: false, filters: false });
+
 const filters = reactive({
     global: { value: null, type: "string" },
     campaign_id: { value: null, type: "number" },
     plan_id: { value: null, type: "number" },
     status: { value: null, type: "string" },
 });
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
     filters,
     currentPage,
 );
-const canUpdate = computed(() => auth.hasPermission("subscriptions.update")),
-    canApprove = computed(() => auth.hasPermission("subscriptions.approve")),
-    canCancel = computed(() => auth.hasPermission("subscriptions.cancel"));
+
+const canUpdate = computed(() => auth.hasPermission("subscriptions.update"));
+const canApprove = computed(() => auth.hasPermission("subscriptions.approve"));
+const canCancel = computed(() => auth.hasPermission("subscriptions.cancel"));
+
 const money = (v) =>
     new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL",
     }).format(v ?? 0);
+
 const label = (s) => statusOptions.value.find((x) => x.value === s)?.label ?? s;
+
 const severity = (s) =>
     ({
         pending: "warn",
@@ -47,6 +56,7 @@ const severity = (s) =>
         expired: "secondary",
         cancelled: "danger",
     })[s] ?? "secondary";
+
 const fetchOptions = async () => {
     const r = await subscriptionService.options();
     campaigns.value = (r.campaigns ?? []).map((x) => ({
@@ -56,6 +66,7 @@ const fetchOptions = async () => {
     plans.value = r.plans ?? [];
     statusOptions.value = r.statuses ?? [];
 };
+
 const fetchAll = async (page = 1) => {
     syncToRoute(page);
     try {
@@ -74,6 +85,7 @@ const fetchAll = async (page = 1) => {
         loading.value = false;
     }
 };
+
 const open = (data) => {
     if (!data || !canUpdate.value)
         return showAlert(
@@ -83,6 +95,7 @@ const open = (data) => {
     subscription.value = data ? { ...data } : null;
     dialogs.form = true;
 };
+
 const openApproval = (data) => {
     if (!canApprove.value)
         return showAlert(
@@ -92,6 +105,7 @@ const openApproval = (data) => {
     subscription.value = { ...data };
     dialogs.approval = true;
 };
+
 const cancel = async (data) => {
     try {
         const r = await subscriptionService.cancel(data.id);
@@ -101,11 +115,13 @@ const cancel = async (data) => {
         showAlert("error", e.response?.data);
     }
 };
+
 const clear = () => {
     Object.values(filters).forEach((x) => (x.value = null));
     dialogs.filters = false;
     fetchAll(1);
 };
+
 onMounted(async () => {
     applyFromRoute();
     try {
@@ -115,6 +131,7 @@ onMounted(async () => {
     }
     fetchAll(currentPage.value);
 });
+
 </script>
 <template>
     <section class="container">

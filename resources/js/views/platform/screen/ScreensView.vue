@@ -19,7 +19,9 @@ const loading = ref(false);
 const pagination = ref({});
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
+
 const dialogs = reactive({ form: false, delete: false, filters: false });
+
 const filters = reactive({
     global: { value: null, type: 'string' },
     establishment_id: { value: null, type: 'number' },
@@ -27,20 +29,24 @@ const filters = reactive({
     orientation: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
 });
+
 const statusOptions = [
     { label: 'Ativa', value: 'active' },
     { label: 'Manutenção', value: 'maintenance' },
     { label: 'Bloqueada', value: 'blocked' },
     { label: 'Estoque', value: 'stock' },
 ];
+
 const orientationOptions = [
     { label: 'Horizontal', value: 'landscape' },
     { label: 'Vertical', value: 'portrait' },
 ];
+
 const breadcrumbItens = [
     { icon: 'pi pi-home', to: '/' },
     { label: 'Telas', to: '/platform/telas' },
 ];
+
 const skeletonColumns = [
     { headerWidth: '80px', bodyWidth: '180px' },
     { headerWidth: '80px', bodyWidth: '140px' },
@@ -48,17 +54,22 @@ const skeletonColumns = [
     { headerWidth: '60px', bodyWidth: '75px', height: '22px', borderRadius: '999px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
+
 const canCreate = computed(() => authStore.hasPermission('screens.create'));
 const canUpdate = computed(() => authStore.hasPermission('screens.update'));
 const canDelete = computed(() => authStore.hasPermission('screens.delete'));
+
 const activeFiltersCount = computed(() => Object.values(filters)
     .filter(filter => filter.value !== null && filter.value !== undefined && filter.value !== '')
     .length);
+
 const filtersButtonLabel = computed(() => activeFiltersCount.value ? `Filtros (${activeFiltersCount.value})` : 'Filtros');
+
 const filteredDisplayPoints = computed(() => {
     if (!filters.establishment_id.value) return displayPoints.value;
     return displayPoints.value.filter(item => item.establishment_id === filters.establishment_id.value);
 });
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
 
 const fetchAll = async page => {

@@ -17,19 +17,24 @@ const loading = ref(false);
 const pagination = ref({});
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
+
 const dialogs = reactive({ form: false, delete: false });
+
 const filters = reactive({
     global: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
 });
+
 const statusOptions = [
     { label: 'Ativa', value: 'active' },
     { label: 'Inativa', value: 'inactive' },
 ];
+
 const breadcrumbItens = [
     { icon: 'pi pi-home', to: '/' },
     { label: 'Categorias', to: '/platform/categorias' },
 ];
+
 const skeletonColumns = [
     { headerWidth: '80px', bodyWidth: '150px' },
     { headerWidth: '45px', bodyWidth: '125px' },
@@ -37,9 +42,11 @@ const skeletonColumns = [
     { headerWidth: '50px', bodyWidth: '62px', height: '22px', borderRadius: '999px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
+
 const canCreate = computed(() => authStore.hasPermission('categories.create'));
 const canUpdate = computed(() => authStore.hasPermission('categories.update'));
 const canDelete = computed(() => authStore.hasPermission('categories.delete'));
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
 
 const fetchAll = async page => {

@@ -19,17 +19,21 @@ const refreshing = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 const pagination = ref({});
+
 const dialogs = reactive({ form: false, delete: false });
 const filters = reactive({ global: '', establishment_id: null, status: null });
+
 const statusOptions = [
     { label: 'Ativo', value: 'active' },
     { label: 'Manutenção', value: 'maintenance' },
     { label: 'Inativo', value: 'inactive' },
 ];
+
 const breadcrumbItems = [
     { icon: 'pi pi-home', to: '/' },
     { label: 'Pontos de exibição' },
 ];
+
 const skeletonColumns = [
     { headerWidth: '55px', bodyWidth: '165px' },
     { headerWidth: '105px', bodyWidth: '180px' },
@@ -38,9 +42,11 @@ const skeletonColumns = [
     { headerWidth: '50px', bodyWidth: '70px', height: '22px', borderRadius: '999px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
+
 const canCreate = computed(() => authStore.hasPermission('display-points.create'));
 const canUpdate = computed(() => authStore.hasPermission('display-points.update'));
 const canDelete = computed(() => authStore.hasPermission('display-points.delete'));
+
 let refreshInterval = null;
 
 const fetchAll = async (page = currentPage.value, silent = false) => {

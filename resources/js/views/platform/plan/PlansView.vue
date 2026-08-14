@@ -6,19 +6,23 @@ import { showAlert } from "@/helpers/alert";
 import planService from "@/services/plan.service";
 import { useAuthStore } from "@/stores/authStore";
 import { computed, onMounted, ref } from "vue";
+
 const auth = useAuthStore();
 const plans = ref([]);
 const plan = ref(null);
 const loading = ref(false);
 const form = ref(false);
+
 const canCreate = computed(() => auth.hasPermission("plans.create"));
 const canUpdate = computed(() => auth.hasPermission("plans.update"));
 const canDelete = computed(() => auth.hasPermission("plans.delete"));
+
 const money = (value) =>
     new Intl.NumberFormat("pt-BR", {
         style: "currency",
         currency: "BRL",
     }).format(value ?? 0);
+
 const fetchAll = async () => {
     try {
         loading.value = true;
@@ -29,6 +33,7 @@ const fetchAll = async () => {
         loading.value = false;
     }
 };
+
 const open = (data) => {
     if (!(data ? canUpdate.value : canCreate.value))
         return showAlert(
@@ -38,6 +43,7 @@ const open = (data) => {
     plan.value = data ? { ...data } : null;
     form.value = true;
 };
+
 const remove = async (data) => {
     if (!canDelete.value) return;
     if (!confirm(`Excluir o plano ${data.name}?`)) return;
@@ -48,7 +54,9 @@ const remove = async (data) => {
         showAlert("error", error.response?.data);
     }
 };
+
 onMounted(fetchAll);
+
 </script>
 <template>
     <section class="container">

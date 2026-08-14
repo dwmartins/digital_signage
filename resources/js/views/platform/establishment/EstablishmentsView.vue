@@ -17,23 +17,29 @@ const loading = ref(false);
 const pagination = ref({});
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
+
 const dialogs = reactive({ form: false, delete: false });
+
 const filters = reactive({
     global: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
     city: { value: null, type: 'string' },
     state: { value: null, type: 'string' },
 });
+
 const statusOptions = [
     { label: 'Ativo', value: 'active' },
     { label: 'Inativo', value: 'inactive' },
     { label: 'Bloqueado', value: 'blocked' },
 ];
+
 const stateOptions = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+
 const breadcrumbItens = [
     { icon: 'pi pi-home', to: '/' },
     { label: 'Estabelecimentos', to: '/platform/estabelecimentos' },
 ];
+
 const skeletonColumns = [
     { headerWidth: '20px', bodyWidth: '30px' },
     { headerWidth: '100px', bodyWidth: '180px' },
@@ -43,9 +49,11 @@ const skeletonColumns = [
     { headerWidth: '50px', bodyWidth: '70px', height: '22px', borderRadius: '999px' },
     { headerWidth: '50px', bodyWidth: '72px', height: '28px', borderRadius: '999px', align: 'center' },
 ];
+
 const canCreate = computed(() => authStore.hasPermission('establishments.create'));
 const canUpdate = computed(() => authStore.hasPermission('establishments.update'));
 const canDelete = computed(() => authStore.hasPermission('establishments.delete'));
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
 
 const fetchAll = async page => {

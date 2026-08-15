@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('campaign_subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('campaign_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->restrictOnDelete();
+            $table->foreignId('campaign_id')->nullable()->unique()->constrained()->nullOnDelete();
             $table->foreignId('plan_id')->constrained()->restrictOnDelete();
             $table->string('status', 32)->default('pending')->index();
             $table->decimal('price', 10, 2);

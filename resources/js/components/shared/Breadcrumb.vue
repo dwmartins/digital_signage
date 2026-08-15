@@ -45,7 +45,7 @@ const { items } = toRefs(props);
                 <i
                     v-if="index < items.length - 1"
                     :class="separatorIcon"
-                    class="mx-2 fs-7 separator"
+                    class="mx-1 mx-sm-2 fs-7 separator"
                 />
             </li>
         </ol>

@@ -30,6 +30,14 @@ export default {
         return response.data;
     },
 
+    /** Retorna alterações, substituições e aprovações da mídia. */
+    async history(id, perPage = 3) {
+        const response = await axios.get(`${API_URL}/media-assets/${id}/history`, {
+            params: { perPage },
+        });
+        return response.data;
+    },
+
     /** Envia uma nova mídia. */
     async create(data) {
         const response = await axios.post(`${API_URL}/media-assets`, toFormData(data));

@@ -5,6 +5,7 @@ namespace App\Domains\Campaign\Models;
 use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Media\Models\MediaAsset;
+use App\Domains\Media\Models\MediaAssetDistribution;
 use App\Domains\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -13,29 +14,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'approved_by', 'name', 'description', 'status', 'approved_at', 'rejection_reason'])]
+#[Fillable(['user_id', 'name', 'description', 'status'])]
 class Campaign extends Model
 {
-    public const STATUS_DRAFT = 'draft';
-
-    public const STATUS_PENDING_APPROVAL = 'pending_approval';
-
-    public const STATUS_APPROVED = 'approved';
-
-    public const STATUS_REJECTED = 'rejected';
-
     public const STATUS_ACTIVE = 'active';
 
-    public const STATUS_PAUSED = 'paused';
-
-    public const STATUS_COMPLETED = 'completed';
-
-    public const STATUS_CANCELLED = 'cancelled';
-
-    protected function casts(): array
-    {
-        return ['approved_at' => 'datetime'];
-    }
+    public const STATUS_INACTIVE = 'inactive';
 
     public function customer(): BelongsTo
     {
@@ -45,11 +29,6 @@ class Campaign extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class)->withTimestamps();
-    }
-
-    public function approver(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function mediaAssets(): BelongsToMany
@@ -62,6 +41,11 @@ class Campaign extends Model
     public function displayPoints(): BelongsToMany
     {
         return $this->belongsToMany(DisplayPoint::class)->withTimestamps();
+    }
+
+    public function mediaDistributions(): HasMany
+    {
+        return $this->hasMany(MediaAssetDistribution::class);
     }
 
     public function subscriptions(): HasMany

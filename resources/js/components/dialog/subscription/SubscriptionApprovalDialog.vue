@@ -16,6 +16,9 @@ const money = (value) =>
         currency: "BRL",
     }).format(value ?? 0);
 const isFree = computed(() => Number(props.subscription?.price ?? 0) === 0);
+const subscriptionTarget = computed(() => props.subscription?.campaign?.name
+    ? `da campanha ${props.subscription.campaign.name}`
+    : `#${props.subscription?.id} de ${props.subscription?.customer?.name ?? "cliente anunciante"}`);
 
 const approve = async () => {
     try {
@@ -47,9 +50,8 @@ const approve = async () => {
             <div class="approval-icon"><i class="pi pi-check-circle"></i></div>
             <div>
                 <p>
-                    Deseja aprovar a assinatura da campanha
-                    <strong>{{ subscription?.campaign?.name }}</strong
-                    >?
+                    Deseja aprovar a assinatura
+                    <strong>{{ subscriptionTarget }}</strong>?
                 </p>
                 <div class="approval-summary">
                     <span>{{ subscription?.plan?.name }}</span
@@ -60,7 +62,7 @@ const approve = async () => {
                 <small class="text-muted">{{
                     isFree
                         ? "Esta ação ativará a assinatura sem gerar fatura ou transação."
-                        : "Esta ação ativará a assinatura, atualizará a campanha e criará uma fatura e uma transação já pagas."
+                        : "Esta ação ativará somente a assinatura e criará uma fatura e uma transação já pagas. A campanha continuará com seu próprio status."
                 }}</small>
             </div>
         </div>

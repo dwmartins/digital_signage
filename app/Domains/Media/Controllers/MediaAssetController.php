@@ -5,8 +5,11 @@ namespace App\Domains\Media\Controllers;
 use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Audit\Services\AuditLogger;
 use App\Domains\Media\Models\MediaAsset;
+use App\Domains\Media\Models\MediaAssetDistribution;
+use App\Domains\Media\Models\MediaAssetHistory;
 use App\Domains\Media\Requests\MediaApprovalRequest;
 use App\Domains\Media\Requests\MediaAssetRequest;
+use App\Domains\Media\Services\MediaHistoryLogger;
 use App\Domains\Media\Services\MediaStatusService;
 use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
@@ -30,6 +33,7 @@ class MediaAssetController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'media_id' => ['nullable', 'integer', 'exists:media_assets,id'],
             'global' => ['nullable', 'string', 'max:255'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'type' => ['nullable', Rule::in([MediaAsset::TYPE_IMAGE, MediaAsset::TYPE_VIDEO])],
@@ -43,11 +47,21 @@ class MediaAssetController extends Controller
             'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = MediaAsset::query()->with([
+        $query = MediaAsset::query()->withCount([
+            'campaigns',
+            'campaigns as distributed_campaigns_count' => fn ($query) => $query
+                ->where('campaigns.status', 'active')
+                ->whereHas('subscription', fn ($query) => $query->where('status', 'active'))
+                ->whereHas('displayPoints'),
+        ])->with([
             'customer:id,name,last_name,email',
             'uploader:id,name,last_name',
             'approver:id,name,last_name',
         ]);
+
+        if ($mediaId = $validated['media_id'] ?? null) {
+            $query->whereKey($mediaId);
+        }
 
         if ($search = $validated['global'] ?? null) {
             $query->where(function ($query) use ($search): void {
@@ -94,6 +108,45 @@ class MediaAssetController extends Controller
     }
 
     /**
+     * Retorna o histórico de alterações e aprovações da mídia.
+     */
+    public function history(Request $request, int $id): JsonResponse
+    {
+        $media = MediaAsset::query()->find($id);
+
+        if (! $media) {
+            return $this->notFound();
+        }
+
+        $validated = $request->validate([
+            'perPage' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $history = MediaAssetHistory::query()
+            ->with('user:id,name,last_name,email')
+            ->where('media_asset_id', $media->id)
+            ->latest()
+            ->limit((int) ($validated['perPage'] ?? 3))
+            ->get([
+                'id', 'media_asset_id', 'user_id', 'event', 'description', 'old_values',
+                'new_values', 'metadata', 'created_at',
+            ]);
+
+        $visibleFields = [
+            'name', 'description', 'original_name', 'type', 'size_bytes',
+            'width', 'height', 'duration_seconds', 'approval_status',
+            'rejection_reason', 'user_id',
+        ];
+
+        $history->each(function (MediaAssetHistory $item) use ($visibleFields): void {
+            $item->old_values = collect($item->old_values)->only($visibleFields)->all();
+            $item->new_values = collect($item->new_values)->only($visibleFields)->all();
+        });
+
+        return response()->json(['data' => $history]);
+    }
+
+    /**
      * Armazena uma nova mídia no disco privado.
      */
     public function store(MediaAssetRequest $request): JsonResponse
@@ -116,6 +169,13 @@ class MediaAssetController extends Controller
             $media = DB::transaction(fn () => MediaAsset::query()->create($data));
             $media->load(['customer:id,name,last_name,email', 'uploader:id,name,last_name']);
 
+            MediaHistoryLogger::record(
+                media: $media,
+                event: 'created',
+                description: "Mídia {$media->name} criada.",
+                newValues: $media->toArray(),
+            );
+
             AuditLogger::record(
                 module: AuditLog::MODULE_MEDIA,
                 action: AuditLog::ACTION_CREATED,
@@ -123,6 +183,7 @@ class MediaAssetController extends Controller
                 auditable: $media,
                 newValues: $media->toArray(),
                 request: $request,
+                metadata: ['event' => 'created'],
             );
 
             return response()->json([
@@ -176,7 +237,19 @@ class MediaAssetController extends Controller
                 ]);
             }
 
-            DB::transaction(fn () => $media->update($data));
+            DB::transaction(function () use ($media, $data, $file): void {
+                $media->update($data);
+
+                if ($file) {
+                    $media->distributions()->update([
+                        'status' => MediaAssetDistribution::STATUS_PENDING,
+                        'processing_started_at' => null,
+                        'distributed_at' => null,
+                        'last_attempt_at' => null,
+                        'error_message' => null,
+                    ]);
+                }
+            });
 
             if ($newPath && $oldPath !== $newPath) {
                 Storage::disk($media->disk)->delete($oldPath);
@@ -188,6 +261,16 @@ class MediaAssetController extends Controller
                 'approver:id,name,last_name',
             ]);
 
+            MediaHistoryLogger::record(
+                media: $media,
+                event: $file ? 'file_replaced' : 'details_updated',
+                description: $file
+                    ? "Arquivo da mídia {$media->name} substituído."
+                    : "Dados da mídia {$media->name} alterados.",
+                oldValues: $oldValues,
+                newValues: $media->toArray(),
+            );
+
             AuditLogger::record(
                 module: AuditLog::MODULE_MEDIA,
                 action: AuditLog::ACTION_UPDATED,
@@ -196,6 +279,7 @@ class MediaAssetController extends Controller
                 oldValues: $oldValues,
                 newValues: $media->toArray(),
                 request: $request,
+                metadata: ['event' => $file ? 'file_replaced' : 'details_updated'],
             );
 
             return response()->json([
@@ -249,6 +333,17 @@ class MediaAssetController extends Controller
             'approver:id,name,last_name',
         ]);
 
+        MediaHistoryLogger::record(
+            media: $media,
+            event: $isApproved ? 'approved' : 'rejected',
+            description: $isApproved
+                ? "Mídia {$media->name} aprovada."
+                : "Mídia {$media->name} rejeitada.",
+            oldValues: $oldValues,
+            newValues: $media->toArray(),
+            metadata: ['decision' => $data['approval_status']],
+        );
+
         AuditLogger::record(
             module: AuditLog::MODULE_MEDIA,
             action: AuditLog::ACTION_UPDATED,
@@ -257,6 +352,10 @@ class MediaAssetController extends Controller
             oldValues: $oldValues,
             newValues: $media->toArray(),
             request: $request,
+            metadata: [
+                'event' => $isApproved ? 'approved' : 'rejected',
+                'decision' => $data['approval_status'],
+            ],
         );
 
         return response()->json([

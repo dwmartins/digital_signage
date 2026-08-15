@@ -15,6 +15,10 @@ export default {
         return (await axios.get(`${API_URL}/campaign-subscriptions/options`))
             .data;
     },
+    /** Cria uma assinatura antes do cadastro da campanha. */
+    async create(data) {
+        return (await axios.post(`${API_URL}/campaign-subscriptions`, data)).data;
+    },
     /** Atualiza plano, status e vigência da assinatura. */
     async update(data) {
         return (

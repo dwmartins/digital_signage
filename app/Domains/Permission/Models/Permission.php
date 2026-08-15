@@ -98,6 +98,8 @@ class Permission extends Model
 
     public const SUBSCRIPTIONS_VIEW = 'subscriptions.view';
 
+    public const SUBSCRIPTIONS_CREATE = 'subscriptions.create';
+
     public const SUBSCRIPTIONS_UPDATE = 'subscriptions.update';
 
     public const SUBSCRIPTIONS_APPROVE = 'subscriptions.approve';
@@ -277,6 +279,7 @@ class Permission extends Model
             self::PLANS_UPDATE => ['name' => 'Editar planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite alterar planos comerciais.'],
             self::PLANS_DELETE => ['name' => 'Excluir planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite excluir planos sem assinaturas.'],
             self::SUBSCRIPTIONS_VIEW => ['name' => 'Visualizar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite consultar contratações de campanhas.'],
+            self::SUBSCRIPTIONS_CREATE => ['name' => 'Criar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite contratar um plano para um anunciante.'],
             self::SUBSCRIPTIONS_UPDATE => ['name' => 'Editar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite editar contratações ainda não ativas.'],
             self::SUBSCRIPTIONS_APPROVE => ['name' => 'Aprovar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite ativar assinaturas e gerar a cobrança inicial.'],
             self::SUBSCRIPTIONS_CANCEL => ['name' => 'Cancelar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite cancelar assinaturas de campanhas.'],

@@ -16,6 +16,7 @@ const auth = useAuthStore();
 const items = ref([]);
 const subscription = ref(null);
 const campaigns = ref([]);
+const customers = ref([]);
 const plans = ref([]);
 const statusOptions = ref([]);
 const loading = ref(false);
@@ -38,6 +39,7 @@ const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
 );
 
 const canUpdate = computed(() => auth.hasPermission("subscriptions.update"));
+const canCreate = computed(() => auth.hasPermission("subscriptions.create"));
 const canApprove = computed(() => auth.hasPermission("subscriptions.approve"));
 const canCancel = computed(() => auth.hasPermission("subscriptions.cancel"));
 
@@ -64,6 +66,7 @@ const fetchOptions = async () => {
         label: `#${x.id} - ${x.name} · ${x.customer?.name ?? ""} ${x.customer?.last_name ?? ""}`,
     }));
     plans.value = r.plans ?? [];
+    customers.value = (r.customers ?? []).map((item) => ({ ...item, full_name: `${item.name} ${item.last_name ?? ""}`.trim() }));
     statusOptions.value = r.statuses ?? [];
 };
 
@@ -86,8 +89,8 @@ const fetchAll = async (page = 1) => {
     }
 };
 
-const open = (data) => {
-    if (!data || !canUpdate.value)
+const open = (data = null) => {
+    if ((data && !canUpdate.value) || (!data && !canCreate.value))
         return showAlert(
             "warning",
             "Você não possui permissão para esta ação.",
@@ -150,6 +153,7 @@ onMounted(async () => {
                     outlined
                     @click="dialogs.filters = true"
                 />
+                <Button label="Nova assinatura" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="open()" />
             </div>
         </div>
         <Card class="mb-3 d-none d-md-block"
@@ -314,14 +318,9 @@ onMounted(async () => {
                     ><Column header="Campanha" style="min-width: 210px"
                         ><template #body="{ data }"
                             ><div class="d-flex flex-column">
-                                <strong
-                                    >#{{ data.campaign?.id }} -
-                                    {{ data.campaign?.name }}</strong
-                                ><small class="text-muted"
-                                    >{{ data.campaign?.customer?.name }}
-                                    {{
-                                        data.campaign?.customer?.last_name
-                                    }}</small
+                                <strong v-if="data.campaign">#{{ data.campaign.id }} - {{ data.campaign.name }}</strong>
+                                <strong v-else class="text-muted">Ainda sem campanha</strong>
+                                <small class="text-muted">{{ data.customer?.name }} {{ data.customer?.last_name }}</small
                                 >
                             </div></template
                         ></Column
@@ -386,6 +385,7 @@ onMounted(async () => {
         ><SubscriptionFormDialog
             v-model="dialogs.form"
             :subscription="subscription"
+            :customers="customers"
             :campaigns="campaigns"
             :plans="plans"
             :statuses="statusOptions"

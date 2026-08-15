@@ -4,12 +4,13 @@ namespace App\Domains\Campaign\Models;
 
 use App\Domains\Billing\Models\Invoice;
 use App\Domains\Plan\Models\Plan;
+use App\Domains\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['campaign_id', 'plan_id', 'status', 'price', 'screen_limit', 'billing_cycle', 'media_type', 'notes', 'starts_at', 'ends_at', 'cancelled_at'])]
+#[Fillable(['user_id', 'campaign_id', 'plan_id', 'status', 'price', 'screen_limit', 'billing_cycle', 'media_type', 'notes', 'starts_at', 'ends_at', 'cancelled_at'])]
 class CampaignSubscription extends Model
 {
     public const STATUS_PENDING = 'pending';
@@ -34,6 +35,11 @@ class CampaignSubscription extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function plan(): BelongsTo

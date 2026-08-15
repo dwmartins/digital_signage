@@ -3,6 +3,7 @@
 namespace App\Domains\Campaign\Requests;
 
 use App\Domains\Campaign\Models\CampaignSubscription;
+use App\Domains\User\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class CampaignSubscriptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'campaign_id' => ['required', 'integer', 'exists:campaigns,id'],
+            'user_id' => [$this->isMethod('post') ? 'required' : 'sometimes', 'integer', Rule::exists('users', 'id')->where('role', User::ROLE_CUSTOMER)],
             'plan_id' => ['required', 'integer', 'exists:plans,id'],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'notes' => ['nullable', 'string', 'max:5000'],

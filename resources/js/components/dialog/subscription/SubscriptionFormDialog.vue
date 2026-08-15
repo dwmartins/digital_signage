@@ -1,4 +1,5 @@
 <script setup>
+import AlertBox from "@/components/shared/AlertBox.vue";
 import { showAlert } from "@/helpers/alert";
 import subscriptionService from "@/services/subscription.service";
 import { computed, reactive, ref, watch } from "vue";
@@ -6,6 +7,7 @@ import { computed, reactive, ref, watch } from "vue";
 const props = defineProps({
     modelValue: Boolean,
     subscription: Object,
+    customers: Array,
     campaigns: Array,
     plans: Array,
     statuses: Array,
@@ -15,6 +17,7 @@ const saving = ref(false);
 const hydrating = ref(false);
 const form = reactive({
     id: null,
+    user_id: null,
     campaign_id: null,
     plan_id: null,
     status: "pending",
@@ -27,23 +30,18 @@ const visible = computed({
     get: () => props.modelValue,
     set: (value) => emit("update:modelValue", value),
 });
+const isUpdate = computed(() => !!props.subscription?.id);
 const selectedPlan = computed(() =>
     props.plans.find((plan) => plan.id === form.plan_id),
 );
 const selectedCampaign = computed(() =>
     props.campaigns.find((campaign) => campaign.id === form.campaign_id),
 );
-const compatiblePlans = computed(() => {
-    const mediaType = selectedCampaign.value?.media_assets?.[0]?.type;
-    return mediaType
-        ? props.plans.filter((plan) => plan.media_type === mediaType)
-        : props.plans;
-});
 const selectableStatuses = computed(() => {
     const allowed = {
         pending: ["pending", "cancelled"],
-        active: ["active", "expired", "cancelled"],
-        expired: ["expired", "cancelled"],
+        active: ["pending", "active", "expired", "cancelled"],
+        expired: ["pending", "expired", "cancelled"],
         cancelled: ["cancelled"],
     }[props.subscription?.status] ?? ["pending"];
 
@@ -74,9 +72,13 @@ const calculateCycleEnd = () => {
 };
 
 const submit = async () => {
+    if (!form.user_id || !form.plan_id)
+        return showAlert("warning", "Selecione o cliente e o plano.");
     try {
         saving.value = true;
-        const response = await subscriptionService.update(form);
+        const response = isUpdate.value
+            ? await subscriptionService.update(form)
+            : await subscriptionService.create(form);
         showAlert("success", response.message);
         emit("saved");
         visible.value = false;
@@ -111,6 +113,7 @@ watch(
         const subscription = props.subscription;
         Object.assign(form, {
             id: subscription?.id ?? null,
+            user_id: subscription?.user_id ?? null,
             campaign_id: subscription?.campaign_id ?? null,
             plan_id: subscription?.plan_id ?? null,
             status: subscription?.status ?? "pending",
@@ -130,20 +133,20 @@ watch(
     <Dialog
         v-model:visible="visible"
         modal
-        header="Editar assinatura"
+        :header="`${isUpdate ? 'Editar' : 'Nova'} assinatura`"
         :style="{ width: '48rem' }"
         :breakpoints="{ '768px': '94vw' }"
         :draggable="false"
     >
         <form id="subscriptionForm" class="row g-4" @submit.prevent="submit">
             <div class="col-12">
-                <Message severity="info" :closable="false"
-                    >Para ativar uma assinatura pendente, use a ação
+                <AlertBox>
+                    Para ativar uma assinatura pendente, use a ação
                     <strong>Aprovar</strong> na listagem. Assim a fatura e a
-                    transação são geradas corretamente.</Message
-                >
+                    transação são geradas corretamente.
+                </AlertBox>
             </div>
-            <div class="col-md-7">
+            <div v-if="isUpdate" class="col-md-7">
                 <div class="field">
                     <label>Campanha</label
                     ><Select
@@ -154,6 +157,12 @@ watch(
                         disabled
                         fluid
                     />
+                </div>
+            </div>
+            <div v-else class="col-md-7">
+                <div class="field">
+                    <label><span class="text-danger me-1">*</span>Cliente anunciante</label>
+                    <Select v-model="form.user_id" :options="customers" optionLabel="full_name" optionValue="id" filter fluid />
                 </div>
             </div>
             <div class="col-md-5">
@@ -174,7 +183,7 @@ watch(
                     <label>Plano</label
                     ><Select
                         v-model="form.plan_id"
-                        :options="compatiblePlans"
+                        :options="plans"
                         optionLabel="name"
                         optionValue="id"
                         :disabled="subscription?.status === 'cancelled'"
@@ -256,7 +265,7 @@ watch(
                 text
                 :disabled="saving"
                 @click="visible = false" /><Button
-                label="Salvar alterações"
+                :label="isUpdate ? 'Salvar alterações' : 'Criar assinatura'"
                 icon="pi pi-check"
                 type="submit"
                 form="subscriptionForm"

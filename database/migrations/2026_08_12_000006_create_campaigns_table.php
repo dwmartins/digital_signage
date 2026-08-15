@@ -11,12 +11,9 @@ return new class extends Migration
         Schema::create('campaigns', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
-            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('status', 32)->default('draft')->index();
-            $table->timestamp('approved_at')->nullable();
-            $table->text('rejection_reason')->nullable();
+            $table->string('status', 32)->default('active')->index();
             $table->timestamps();
 
             $table->index(['user_id', 'status']);
@@ -51,10 +48,30 @@ return new class extends Migration
 
             $table->unique(['campaign_id', 'display_point_id']);
         });
+
+        Schema::create('media_asset_distributions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('campaign_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('media_asset_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('display_point_id')->constrained()->cascadeOnDelete();
+            $table->string('status', 32)->default('pending')->index();
+            $table->timestamp('processing_started_at')->nullable();
+            $table->timestamp('distributed_at')->nullable();
+            $table->timestamp('last_attempt_at')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamps();
+
+            $table->unique(
+                ['campaign_id', 'media_asset_id', 'display_point_id'],
+                'media_distribution_unique',
+            );
+            $table->index(['display_point_id', 'status']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('media_asset_distributions');
         Schema::dropIfExists('campaign_display_point');
         Schema::dropIfExists('campaign_media_asset');
         Schema::dropIfExists('campaign_category');

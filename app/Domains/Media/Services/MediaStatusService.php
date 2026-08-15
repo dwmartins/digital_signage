@@ -28,11 +28,26 @@ class MediaStatusService
             return;
         }
 
-        $media->update([
-            'approval_status' => self::hasActiveSubscription($media)
-                ? MediaAsset::APPROVAL_APPROVED
-                : MediaAsset::APPROVAL_AWAITING_SUBSCRIPTION,
-        ]);
+        $newStatus = self::hasActiveSubscription($media)
+            ? MediaAsset::APPROVAL_APPROVED
+            : MediaAsset::APPROVAL_AWAITING_SUBSCRIPTION;
+
+        if ($media->approval_status === $newStatus) {
+            return;
+        }
+
+        $oldValues = $media->toArray();
+        $media->update(['approval_status' => $newStatus]);
+
+        MediaHistoryLogger::record(
+            media: $media,
+            event: 'subscription_status_changed',
+            description: $newStatus === MediaAsset::APPROVAL_APPROVED
+                ? "Mídia {$media->name} liberada após ativação da assinatura."
+                : "Mídia {$media->name} aguardando assinatura ativa.",
+            oldValues: $oldValues,
+            newValues: $media->fresh()->toArray(),
+        );
     }
 
     private static function hasActiveSubscription(MediaAsset $media): bool

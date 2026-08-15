@@ -1,6 +1,6 @@
 <script setup>
 import CampaignDeleteDialog from "@/components/dialog/campaign/CampaignDeleteDialog.vue";
-import CampaignFormDialog from "@/components/dialog/campaign/CampaignFormDialog.vue";
+import CampaignDetailsDialog from "@/components/dialog/campaign/CampaignDetailsDialog.vue";
 import Breadcrumb from "@/components/shared/Breadcrumb.vue";
 import EmptyData from "@/components/shared/EmptyData.vue";
 import TableSkeleton from "@/components/shared/TableSkeleton.vue";
@@ -9,20 +9,20 @@ import { showAlert } from "@/helpers/alert";
 import campaignService from "@/services/campaign.service";
 import { useAuthStore } from "@/stores/authStore";
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const auth = useAuthStore();
+const router = useRouter();
 const campaigns = ref([]);
 const campaign = ref(null);
 const customers = ref([]);
 const categories = ref([]);
-const plans = ref([]);
-const mediaAssets = ref([]);
 const loading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 const pagination = ref({});
 
-const dialogs = reactive({ form: false, delete: false, filters: false });
+const dialogs = reactive({ details: false, delete: false, filters: false });
 
 const filters = reactive({
     global: { value: null, type: "string" },
@@ -32,14 +32,8 @@ const filters = reactive({
 });
 
 const statusOptions = [
-    { label: "Rascunho", value: "draft" },
-    { label: "Aguardando aprovação", value: "pending_approval" },
-    { label: "Aprovada", value: "approved" },
-    { label: "Rejeitada", value: "rejected" },
     { label: "Ativa", value: "active" },
-    { label: "Pausada", value: "paused" },
-    { label: "Concluída", value: "completed" },
-    { label: "Cancelada", value: "cancelled" },
+    { label: "Inativa", value: "inactive" },
 ];
 
 const skeletonColumns = [
@@ -48,7 +42,7 @@ const skeletonColumns = [
     { bodyWidth: "160px" },
     { bodyWidth: "130px" },
     { bodyWidth: "110px" },
-    { bodyWidth: "120px", align: "center" },
+    { bodyWidth: "150px", align: "center" },
 ];
 
 const canCreate = computed(() => auth.hasPermission("campaigns.create"));
@@ -67,8 +61,6 @@ const fetchOptions = async () => {
         full_name: `${item.name} ${item.last_name ?? ""}`.trim(),
     }));
     categories.value = response.categories ?? [];
-    plans.value = response.plans ?? [];
-    mediaAssets.value = response.media_assets ?? [];
 };
 
 const fetchAll = async (page = 1) => {
@@ -91,6 +83,13 @@ const fetchAll = async (page = 1) => {
 };
 
 const openDialog = (type, data = null) => {
+    if (type === "details") {
+        campaign.value = { ...data };
+        dialogs.details = true;
+
+        return;
+    }
+
     const allowed =
         type === "delete"
             ? canDelete.value
@@ -102,6 +101,12 @@ const openDialog = (type, data = null) => {
             "warning",
             "Você não possui permissão para esta ação.",
         );
+    if (type === "form") {
+        return router.push({
+            name: data ? "platform.campaigns.edit" : "platform.campaigns.create",
+            params: data ? { id: data.id } : {},
+        });
+    }
     campaign.value = data ? { ...data } : null;
     dialogs[type] = true;
 };
@@ -119,14 +124,8 @@ const statusLabel = (value) =>
     statusOptions.find((option) => option.value === value)?.label ?? value;
 const statusSeverity = (value) =>
     ({
-        draft: "secondary",
-        pending_approval: "warn",
-        approved: "info",
-        rejected: "danger",
         active: "success",
-        paused: "warn",
-        completed: "secondary",
-        cancelled: "danger",
+        inactive: "secondary",
     })[value] ?? "secondary";
 
 onMounted(async () => {
@@ -392,28 +391,37 @@ onMounted(async () => {
                                     statusSeverity(data.status)
                                 " /></template
                     ></Column>
-                    <Column style="width: 120px"
-                        ><template #header
-                            ><span class="w-100 text-center"
-                                >Ações</span
-                            ></template
-                        ><template #body="{ data }"
-                            ><div class="d-flex justify-content-center">
+                    <Column style="width: 150px">
+                        <template #header>
+                            <span class="w-100 text-center">Ações</span>
+                        </template>
+                        <template #body="{ data }">
+                            <div class="d-flex justify-content-center gap-1">
+                                <Button
+                                    icon="pi pi-eye"
+                                    text
+                                    rounded
+                                    v-tooltip.top="'Visualizar detalhes'"
+                                    @click="openDialog('details', data)"
+                                />
                                 <Button
                                     icon="pi pi-pencil"
                                     text
                                     rounded
                                     :disabled="!canUpdate"
                                     @click="openDialog('form', data)"
-                                /><Button
+                                />
+                                <Button
                                     icon="pi pi-trash"
                                     text
                                     rounded
                                     severity="danger"
                                     :disabled="!canDelete"
                                     @click="openDialog('delete', data)"
-                                /></div></template
-                    ></Column>
+                                />
+                            </div>
+                        </template>
+                    </Column>
                 </DataTable>
                 <EmptyData
                     v-if="!loading && !campaigns.length"
@@ -422,20 +430,11 @@ onMounted(async () => {
                 /> </template
         ></Card>
 
-        <CampaignFormDialog
-            v-model="dialogs.form"
-            :campaign="campaign"
-            :customers="customers"
-            :categories="categories"
-            :plans="plans"
-            :mediaAssets="mediaAssets"
-            @saved="
-                () => {
-                    fetchOptions();
-                    fetchAll(currentPage);
-                }
-            "
+        <CampaignDetailsDialog
+            v-model="dialogs.details"
+            :campaign-id="campaign?.id"
         />
+
         <CampaignDeleteDialog
             v-model="dialogs.delete"
             :campaign="campaign"

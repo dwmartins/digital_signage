@@ -31,6 +31,7 @@ const dialogs = reactive({
 });
 
 const filters = reactive({
+    media_id: { value: null, type: "number" },
     global: { value: null, type: "string" },
     user_id: { value: null, type: "number" },
     type: { value: null, type: "string" },
@@ -55,8 +56,13 @@ const breadcrumbItems = [
 ];
 
 const skeletonColumns = [
-    { headerWidth: "70px", bodyWidth: "170px" },
-    { headerWidth: "85px", bodyWidth: "170px" },
+    { headerWidth: "70px", bodyWidth: "230px" },
+    {
+        headerWidth: "55px",
+        bodyWidth: "90px",
+        height: "22px",
+        borderRadius: "999px",
+    },
     {
         headerWidth: "50px",
         bodyWidth: "65px",
@@ -373,8 +379,8 @@ onMounted(() => {
             /></template>
         </Dialog>
 
-        <Card
-            ><template #content>
+        <Card>
+            <template #content>
                 <TableSkeleton
                     v-show="loading"
                     :rows="itemsPerPage"
@@ -394,90 +400,95 @@ onMounted(() => {
                     stripedRows
                     @page="onPage"
                 >
-                    <Column header="Mídia" style="min-width: 210px"
-                        ><template #body="{ data }"
-                            ><div class="d-flex align-items-center gap-3">
+                    <Column header="Mídia" style="min-width: 280px">
+                        <template #body="{ data }">
+                            <div class="d-flex align-items-center gap-3">
                                 <div class="media-thumb">
                                     <img
                                         v-if="data.type === 'image'"
                                         :src="data.content_url"
                                         :alt="data.name"
-                                    /><i v-else class="pi pi-video"></i>
+                                    />
+                                    <i v-else class="pi pi-video"></i>
                                 </div>
                                 <div class="d-flex flex-column">
-                                    <strong>{{ data.name }}</strong
-                                    ><small class="text-muted"
-                                        >{{ data.original_name }} ·
-                                        {{ formatSize(data.size_bytes) }}</small
-                                    >
+                                    <strong>{{ data.name }}</strong>
+                                    <small class="text-muted">
+                                        {{ data.original_name }} · {{ formatSize(data.size_bytes) }}
+                                    </small>
+                                    <small class="advertiser-name">
+                                        <i class="pi pi-user me-1"></i>
+                                        {{ data.customer?.name }} {{ data.customer?.last_name }}
+                                    </small>
                                 </div>
-                            </div></template
-                        ></Column
-                    >
-                    <Column header="Anunciante" style="min-width: 200px"
-                        ><template #body="{ data }"
-                            ><span
-                                >#{{ data.customer?.id }} -
-                                {{ data.customer?.name }}
-                                {{ data.customer?.last_name }}</span
-                            ></template
-                        ></Column
-                    >
-                    <Column header="Tipo" style="width: 100px"
-                        ><template #body="{ data }"
-                            ><Tag
-                                :value="
-                                    data.type === 'image' ? 'Imagem' : 'Vídeo'
-                                "
-                                :icon="
-                                    data.type === 'image'
-                                        ? 'pi pi-image'
-                                        : 'pi pi-video'
-                                "
-                                severity="info" /></template
-                    ></Column>
-                    <Column header="Detalhes" style="min-width: 140px"
-                        ><template #body="{ data }"
-                            ><div class="d-flex flex-column">
-                                <span>{{ formatSpecifications(data) }}</span
-                                ><small class="text-muted">{{
-                                    data.mime_type
-                                }}</small>
-                            </div></template
-                        ></Column
-                    >
-                    <Column header="Status" style="width: 180px"
-                        ><template #body="{ data }"
-                            ><div
-                                class="d-flex flex-column align-items-start gap-1"
-                            >
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column header="Tipo" style="width: 100px">
+                        <template #body="{ data }">
+                            <Tag
+                                :value="data.type === 'image' ? 'Imagem' : 'Vídeo'"
+                                :icon="data.type === 'image' ? 'pi pi-image' : 'pi pi-video'"
+                                severity="info"
+                            />
+                        </template>
+                    </Column>
+
+                    <Column header="Detalhes" style="min-width: 140px">
+                        <template #body="{ data }">
+                            <div class="d-flex flex-column">
+                                <span>{{ formatSpecifications(data) }}</span>
+                                <small class="text-muted">{{ data.mime_type }}</small>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column header="Status" style="width: 180px">
+                        <template #body="{ data }">
+                            <div class="d-flex flex-column align-items-start gap-1">
                                 <Tag
                                     :value="approvalLabel(data.approval_status)"
-                                    :severity="
-                                        approvalSeverity(data.approval_status)
-                                    "
-                                /><small
+                                    :severity="approvalSeverity(data.approval_status)"
+                                />
+                                <small
                                     v-if="data.rejection_reason"
                                     class="text-danger text-truncate rejection-reason"
                                     :title="data.rejection_reason"
-                                    >{{ data.rejection_reason }}</small
                                 >
-                            </div></template
-                        ></Column
-                    >
-                    <Column style="width: 185px"
-                        ><template #header
-                            ><span class="w-100 text-center"
-                                >Ações</span
-                            ></template
-                        ><template #body="{ data }"
-                            ><div class="d-flex justify-content-center gap-1">
+                                    {{ data.rejection_reason }}
+                                </small>
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column header="Vínculo" style="min-width: 150px">
+                        <template #body="{ data }">
+                            <Tag
+                                :value="data.campaigns_count > 0
+                                    ? `Vinculada a\n${data.campaigns_count} ${data.campaigns_count === 1 ? 'campanha' : 'campanhas'}`
+                                    : 'Sem vínculo'"
+                                :severity="data.campaigns_count > 0 ? 'info' : 'secondary'"
+                                :icon="data.campaigns_count > 0 ? 'pi pi-link' : 'pi pi-minus-circle'"
+                                v-tooltip.top="data.campaigns_count > 0 ? `Vinculada a ${data.campaigns_count} campanha(s)` : 'Não está vinculada a nenhuma campanha'"
+                                class="campaign-link-tag"
+                            />
+                        </template>
+                    </Column>
+
+                    <Column style="width: 185px">
+                        <template #header>
+                            <span class="w-100 text-center">Ações</span>
+                        </template>
+                        <template #body="{ data }">
+                            <div class="d-flex justify-content-center gap-1">
                                 <Button
                                     icon="pi pi-eye"
                                     text
                                     rounded
                                     @click="openDialog('preview', data)"
-                                /><Button
+                                />
+                                <Button
                                     icon="pi pi-check-circle"
                                     text
                                     rounded
@@ -488,28 +499,34 @@ onMounted(() => {
                                     "
                                     v-tooltip.top="'Analisar mídia'"
                                     @click="openDialog('approval', data)"
-                                /><Button
+                                />
+                                <Button
                                     icon="pi pi-pencil"
                                     text
                                     rounded
                                     :disabled="!canUpdate"
                                     @click="openDialog('form', data)"
-                                /><Button
+                                />
+                                <Button
                                     icon="pi pi-trash"
                                     text
                                     rounded
                                     severity="danger"
                                     :disabled="!canDelete"
                                     @click="openDialog('delete', data)"
-                                /></div></template
-                    ></Column>
+                                />
+                            </div>
+                        </template>
+                    </Column>
                 </DataTable>
+
                 <EmptyData
                     v-if="!loading && !mediaAssets.length"
                     :show-btn-clean-filters="true"
                     @clean-filters="clearFilters"
-                /> </template
-        ></Card>
+                />
+            </template>
+        </Card>
 
         <MediaFormDialog
             v-model="dialogs.form"
@@ -551,8 +568,21 @@ onMounted(() => {
 .rejection-reason {
     max-width: 150px;
 }
+.advertiser-name {
+    margin-top: 0.2rem;
+    color: var(--p-primary-color);
+}
+:deep(.campaign-link-tag) {
+    min-width: 105px;
+    justify-content: center;
+    text-align: center;
+}
+:deep(.campaign-link-tag .p-tag-label) {
+    white-space: pre-line;
+    line-height: 1.15;
+}
 :deep(.media-table-skeleton) {
-    --table-skeleton-columns: minmax(210px, 1.2fr) 200px 100px 140px 180px 185px;
+    --table-skeleton-columns: minmax(280px, 1.4fr) 125px 100px 140px 180px 185px;
     --table-skeleton-min-width: 1015px;
 }
 </style>

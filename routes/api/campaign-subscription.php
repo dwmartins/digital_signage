@@ -9,6 +9,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/campaign-subscriptions/options', [CampaignSubscriptionController::class, 'options'])
         ->middleware('platform:subscriptions.view');
+
+    Route::post('/campaign-subscriptions', [CampaignSubscriptionController::class, 'store'])
+        ->middleware('platform:subscriptions.create');
         
     Route::put('/campaign-subscriptions/{id}', [CampaignSubscriptionController::class, 'update'])
         ->middleware('platform:subscriptions.update');

@@ -12,6 +12,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
     Route::get('/media-assets/{id}/content', [MediaAssetController::class, 'content'])
         ->middleware(['platform:media.view']);
+
+    Route::get('/media-assets/{id}/history', [MediaAssetController::class, 'history'])
+        ->middleware(['platform:media.view']);
         
     Route::post('/media-assets', [MediaAssetController::class, 'store'])
         ->middleware(['platform:media.create']);

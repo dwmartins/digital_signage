@@ -36,10 +36,25 @@ return new class extends Migration
 
             $table->index(['user_id', 'type']);
         });
+
+        Schema::create('media_asset_histories', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('media_asset_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('event', 32)->index();
+            $table->string('description')->nullable();
+            $table->json('old_values')->nullable();
+            $table->json('new_values')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+
+            $table->index(['media_asset_id', 'created_at']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('media_asset_histories');
         Schema::dropIfExists('media_assets');
     }
 };

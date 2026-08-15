@@ -36,7 +36,6 @@ return new class extends Migration
             $table->unsignedInteger('display_duration_seconds')->nullable();
             $table->timestamps();
 
-            $table->unique('campaign_id');
             $table->unique(['campaign_id', 'media_asset_id']);
         });
 

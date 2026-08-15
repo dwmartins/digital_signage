@@ -105,9 +105,15 @@ class CampaignSubscriptionController extends Controller
             return response()->json(['message' => 'O plano selecionado não está disponível.'], 422);
         }
 
-        if ($subscription->campaign && $subscription->campaign->mediaAssets->first()?->type !== $plan->media_type) {
+        if ($subscription->campaign && $subscription->campaign->mediaAssets->contains(fn ($media) => $media->type !== $plan->media_type)) {
             return response()->json([
                 'message' => 'O tipo de mídia da campanha não é compatível com o plano selecionado.',
+            ], 422);
+        }
+
+        if ($subscription->campaign && $subscription->campaign->mediaAssets->count() > $plan->media_limit) {
+            return response()->json([
+                'message' => "A campanha possui mais mídias do que o limite de {$plan->media_limit} permitido pelo plano selecionado.",
             ], 422);
         }
 
@@ -192,7 +198,7 @@ class CampaignSubscriptionController extends Controller
 
     private function snapshot(int $userId, Plan $plan, string $status = CampaignSubscription::STATUS_PENDING): array
     {
-        return ['user_id' => $userId, 'plan_id' => $plan->id, 'status' => $status, 'price' => $plan->price, 'screen_limit' => $plan->screen_limit, 'billing_cycle' => $plan->billing_cycle, 'media_type' => $plan->media_type, 'starts_at' => null, 'ends_at' => null, 'cancelled_at' => null];
+        return ['user_id' => $userId, 'plan_id' => $plan->id, 'status' => $status, 'price' => $plan->price, 'screen_limit' => $plan->screen_limit, 'media_limit' => $plan->media_limit, 'billing_cycle' => $plan->billing_cycle, 'media_type' => $plan->media_type, 'starts_at' => null, 'ends_at' => null, 'cancelled_at' => null];
     }
 
     private function statuses(): array

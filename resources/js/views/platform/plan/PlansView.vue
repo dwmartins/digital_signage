@@ -152,6 +152,14 @@ onMounted(fetchAll);
                             >
                         </div>
                         <div>
+                            <i class="pi pi-images"></i>
+                            <span>
+                                Até <strong>{{ item.media_limit }}</strong>
+                                {{ item.media_limit === 1 ? "mídia" : "mídias" }}
+                                por campanha
+                            </span>
+                        </div>
+                        <div>
                             <i class="pi pi-link"></i
                             ><span
                                 ><strong>{{ item.subscriptions_count }}</strong>

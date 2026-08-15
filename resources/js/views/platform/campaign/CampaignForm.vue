@@ -19,7 +19,7 @@ const pointResults = ref([]);
 const pointPagination = ref({ total: 0, current_page: 1 });
 const pointRows = ref(5);
 const loadingPoints = ref(false);
-const filePreviewUrl = ref(null);
+const filePreviewUrls = ref([]);
 const contentSource = ref("upload");
 const libraryMedia = ref([]);
 const loadingLibrary = ref(false);
@@ -29,7 +29,7 @@ const cities = ref([]);
 const neighborhoods = ref([]);
 const pointFilters = reactive({ search: "", state_id: null, city_id: null, neighborhood_id: null });
 
-const form = reactive({ id: null, subscription_id: null, name: "", description: "", status: "active", category_ids: [], display_point_ids: [], file: null, media_asset_id: null });
+const form = reactive({ id: null, subscription_id: null, name: "", description: "", status: "active", category_ids: [], display_point_ids: [], files: [], media_asset_ids: [] });
 const campaignStatusOptions = [
     { label: "Ativa", value: "active" },
     { label: "Inativa", value: "inactive" },
@@ -51,6 +51,15 @@ const router = useRouter();
 
 const campaignMedia = computed(() => props.campaign?.media_assets ?? props.campaign?.mediaAssets ?? []);
 const customerId = computed(() => props.campaign?.user_id ?? selectedSubscription.value?.user_id ?? null);
+const mediaLimit = computed(() => Number(selectedSubscription.value?.media_limit ?? 1));
+const mediaCapacity = computed(() => Math.max(mediaLimit.value - campaignMedia.value.length, 0));
+const availableMediaSlots = computed(() => Math.max(
+    mediaCapacity.value - form.files.length - form.media_asset_ids.length,
+    0,
+));
+const availableLibraryMedia = computed(() => libraryMedia.value.filter(
+    (media) => !campaignMedia.value.some((current) => current.id === media.id),
+));
 const selectedDisplayPoints = computed(() => props.displayPoints.filter((point) => form.display_point_ids.includes(point.id)));
 const displayPointLimit = computed(() => Number(selectedSubscription.value?.screen_limit ?? 0));
 const displayPointLimitReached = computed(() => displayPointLimit.value > 0
@@ -61,12 +70,20 @@ const draftDisplayPointLimitReached = computed(() => displayPointLimit.value > 0
 
 const displayPointLimitMessage = computed(() => `O plano permite no máximo ${displayPointLimit.value} ponto(s) de exibição.`);
 
-const displayedMedia = computed(() => form.file
-    ? [{ id: "new", name: form.file.name, original_name: form.file.name, size_bytes: form.file.size,
-        type: selectedSubscription.value?.media_type, content_url: filePreviewUrl.value, isNew: true }]
-    : form.media_asset_id
-        ? libraryMedia.value.filter((media) => media.id === form.media_asset_id)
-        : campaignMedia.value);
+const displayedMedia = computed(() => [
+    ...campaignMedia.value,
+    ...libraryMedia.value.filter((media) => form.media_asset_ids.includes(media.id)
+        && !campaignMedia.value.some((current) => current.id === media.id)),
+    ...form.files.map((file, index) => ({
+        id: `new-${index}`,
+        name: file.name,
+        original_name: file.name,
+        size_bytes: file.size,
+        type: selectedSubscription.value?.media_type,
+        content_url: filePreviewUrls.value[index] ?? null,
+        isNew: true,
+    })),
+]);
 
 const formatSize = (bytes) =>
     bytes >= 1048576
@@ -100,8 +117,8 @@ const detachMedia = async () => {
 };
 
 const clearFilePreview = () => {
-    if (filePreviewUrl.value) URL.revokeObjectURL(filePreviewUrl.value);
-    filePreviewUrl.value = null;
+    filePreviewUrls.value.forEach((url) => URL.revokeObjectURL(url));
+    filePreviewUrls.value = [];
 };
 
 const fetchLibraryMedia = async () => {
@@ -122,8 +139,8 @@ const fetchLibraryMedia = async () => {
 
 const changeContentSource = (source) => {
     contentSource.value = source;
-    form.file = null;
-    form.media_asset_id = null;
+    form.files = [];
+    form.media_asset_ids = [];
     clearFilePreview();
 };
 
@@ -202,21 +219,33 @@ const validateVideo = (file) => new Promise((resolve) => {
 });
 
 const selectFile = async (event) => {
-    const file = event.files?.[0];
-    if (!file) return;
+    const selectedFiles = event.files ?? [];
+    const files = selectedFiles.filter((file) => !form.files.some((current) =>
+        current.name === file.name
+        && current.size === file.size
+        && current.lastModified === file.lastModified,
+    ));
+    if (!files.length) return showAlert("warning", "Os arquivos selecionados já foram adicionados.");
+    if (files.length > availableMediaSlots.value) {
+        return showAlert("warning", `O plano permite adicionar mais ${availableMediaSlots.value} mídia(s) nesta campanha.`);
+    }
     const expected = selectedSubscription.value?.media_type;
-    if (!file.type.startsWith(`${expected}/`)) return showAlert("warning", `Esta assinatura aceita apenas ${expected === "video" ? "vídeo" : "imagem"}.`);
-    if (expected === "video" && !(await validateVideo(file))) return showAlert("warning", "O vídeo deve possuir no máximo 15 segundos.");
-    clearFilePreview();
-    if (expected === "image") filePreviewUrl.value = URL.createObjectURL(file);
-    form.media_asset_id = null;
-    form.file = file;
+    if (files.some((file) => !file.type.startsWith(`${expected}/`))) return showAlert("warning", `Esta assinatura aceita apenas ${expected === "video" ? "vídeos" : "imagens"}.`);
+    if (expected === "video") {
+        const validVideos = await Promise.all(files.map(validateVideo));
+        if (validVideos.some((valid) => !valid)) return showAlert("warning", "Todos os vídeos devem possuir no máximo 15 segundos.");
+    }
+    form.media_asset_ids = [];
+    if (expected === "image") {
+        filePreviewUrls.value.push(...files.map((file) => URL.createObjectURL(file)));
+    }
+    form.files.push(...files);
 };
 
 const submit = async () => {
     errors.subscription_id = form.subscription_id ? null : "Selecione uma assinatura disponível.";
     errors.name = form.name.trim() ? null : "Informe o nome.";
-    errors.file = !isUpdate.value && !form.file && !form.media_asset_id ? "Envie um arquivo ou selecione uma mídia da Biblioteca." : null;
+    errors.file = !isUpdate.value && !form.files.length && !form.media_asset_ids.length ? "Envie ao menos um arquivo ou selecione uma mídia da Biblioteca." : null;
     if (Object.values(errors).some(Boolean)) return;
     try {
         saving.value = true;
@@ -227,17 +256,17 @@ const submit = async () => {
 };
 
 watch(() => form.subscription_id, () => {
-    form.file = null;
-    form.media_asset_id = null;
+    form.files = [];
+    form.media_asset_ids = [];
     clearFilePreview();
     fetchLibraryMedia();
 });
 
-watch(() => form.media_asset_id, (value) => {
-    if (!value) return;
-    form.file = null;
+watch(() => form.media_asset_ids, (value) => {
+    if (!value.length) return;
+    form.files = [];
     clearFilePreview();
-});
+}, { deep: true });
 
 watch(() => displayPointDialog.value, (opened) => {
     if (!opened) {
@@ -265,7 +294,7 @@ watch(() => props.modelValue, (opened) => {
         name: campaign?.name ?? "", description: campaign?.description ?? "", status: campaign?.status ?? "active",
         category_ids: campaign?.categories?.map((item) => item.id) ?? [],
         display_point_ids: campaign?.display_points?.map((item) => item.id) ?? [],
-        file: null, media_asset_id: null
+        files: [], media_asset_ids: []
     });
     contentSource.value = "upload";
     Object.keys(errors).forEach((key) => delete errors[key]);
@@ -326,6 +355,17 @@ onBeforeUnmount(clearFilePreview);
                                     <small>Tipo de mídia</small>
                                     <strong>{{ selectedSubscription.media_type === 'video' ? 'Vídeo' : 'Imagem' }}</strong>
                                     <span v-if="selectedSubscription.media_type === 'video'">Até 15 segundos</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6 col-lg-3">
+                            <div class="d-flex align-items-start gap-2 h-100 p-3 border rounded-3 plan-detail-item">
+                                <i class="pi pi-images"></i>
+                                <div>
+                                    <small>Limite de mídias</small>
+                                    <strong>Até {{ selectedSubscription.media_limit }}</strong>
+                                    <span>{{ selectedSubscription.media_limit === 1 ? 'mídia' : 'mídias' }} na campanha</span>
                                 </div>
                             </div>
                         </div>
@@ -443,7 +483,12 @@ onBeforeUnmount(clearFilePreview);
 
                     <div v-if="displayedMedia.length" class="p-3 border rounded-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-                            <div><strong>Mídia da campanha</strong><small class="d-block text-muted">{{ form.file ? 'Prévia do novo arquivo' : 'Arquivo atualmente vinculado' }}</small></div>
+                            <div>
+                                <strong>Mídias da campanha</strong>
+                                <small class="d-block text-muted">
+                                    {{ displayedMedia.length }} de {{ mediaLimit }} mídia(s) utilizada(s)
+                                </small>
+                            </div>
                             <Tag :value="selectedSubscription?.media_type === 'video' ? 'Vídeo' : 'Imagem'" :icon="selectedSubscription?.media_type === 'video' ? 'pi pi-video' : 'pi pi-image'" severity="info" />
                         </div>
                         <div v-if="selectedSubscription?.media_type === 'image'" class="row g-3">
@@ -475,26 +520,30 @@ onBeforeUnmount(clearFilePreview);
                         </div>
                         <div class="col-12 col-md-6">
                             <button type="button" class="d-flex align-items-center gap-3 w-100 h-100 p-3 border rounded-3 text-start source-option" :class="{ active: contentSource === 'library' }" @click="changeContentSource('library')">
-                                <i class="pi pi-images"></i><span><strong>Escolher da Biblioteca</strong><small>Usar uma mídia já enviada pelo anunciante</small></span>
+                                <i class="pi pi-images"></i><span><strong>Escolher da Biblioteca</strong><small>Usar mídias já enviadas pelo anunciante</small></span>
                             </button>
                         </div>
                     </div>
 
                     <div v-if="contentSource === 'upload'" class="d-flex flex-wrap align-items-center gap-2 p-3 border rounded-3 upload-actions">
-                        <FileUpload mode="basic" name="file" :accept="accept" :disabled="!selectedSubscription"
-                            :chooseLabel="isUpdate ? 'Selecionar novo arquivo' : 'Selecionar arquivo'" chooseIcon="pi pi-upload" customUpload auto @select="selectFile" />
+                        <FileUpload mode="basic" name="files[]" :accept="accept" :disabled="!selectedSubscription || !availableMediaSlots"
+                            chooseLabel="Selecionar arquivos" chooseIcon="pi pi-upload" customUpload auto multiple @select="selectFile" />
                         <Button v-if="customerId" label="Ver todas as mídias do cliente" icon="pi pi-images" severity="secondary" outlined @click="viewAllMedia" />
+                        <small class="w-100 text-muted">
+                            Você pode adicionar mais {{ availableMediaSlots }} mídia(s) conforme o plano.
+                        </small>
                     </div>
                     <div v-else class="p-3 border rounded-3 library-selector">
-                        <Select v-model="form.media_asset_id" :options="libraryMedia" optionLabel="name" optionValue="id"
-                            :loading="loadingLibrary" :disabled="!selectedSubscription" filter showClear fluid
-                            placeholder="Selecione uma mídia compatível">
+                        <MultiSelect v-model="form.media_asset_ids" :options="availableLibraryMedia" optionLabel="name" optionValue="id"
+                            :loading="loadingLibrary" :disabled="!selectedSubscription || !availableMediaSlots"
+                            :selectionLimit="mediaCapacity" filter display="chip" fluid
+                            placeholder="Selecione as mídias compatíveis">
                             <template #option="{ option }"><div class="d-flex align-items-center gap-3 py-1 w-100"><div class="library-thumb"><img v-if="option.type === 'image'" :src="option.content_url" :alt="option.name" /><i v-else class="pi pi-video"></i></div><div class="d-flex flex-column flex-grow-1 min-width-0"><strong>{{ option.name }}</strong><small class="text-muted">{{ option.original_name }} · {{ formatSize(option.size_bytes) }}</small></div><Tag :value="option.approval_status === 'approved' ? 'Aprovada' : option.approval_status === 'awaiting_subscription' ? 'Aguardando assinatura' : 'Aguardando aprovação'" :severity="option.approval_status === 'approved' ? 'success' : 'warn'" /></div></template>
-                        </Select>
-                        <small v-if="!loadingLibrary && !libraryMedia.length" class="text-muted d-block mt-2">Não há mídias compatíveis na Biblioteca deste anunciante.</small>
+                        </MultiSelect>
+                        <small v-if="!loadingLibrary && !availableLibraryMedia.length" class="text-muted d-block mt-2">Não há novas mídias compatíveis na Biblioteca deste anunciante.</small>
                     </div>
                     <small v-if="errors.file" class="text-danger">{{ errors.file }}</small>
-                    <small v-else-if="isUpdate" class="text-muted d-block">Deixe vazio para manter a mídia atual.</small>
+                    <small v-else-if="isUpdate" class="text-muted d-block">Deixe vazio para manter as mídias atuais.</small>
                 </div>
             </div>
         </form>

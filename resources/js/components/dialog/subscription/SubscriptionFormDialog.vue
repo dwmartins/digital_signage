@@ -189,7 +189,21 @@ watch(
                         :disabled="subscription?.status === 'cancelled'"
                         filter
                         fluid
-                    />
+                    >
+                        <template #option="{ option }">
+                            <div class="d-flex flex-column">
+                                <strong>{{ option.name }}</strong>
+                                <small class="text-muted">
+                                    {{ option.media_type === 'video' ? 'Vídeo' : 'Imagem' }} ·
+                                    {{ option.media_limit }} mídia(s) ·
+                                    {{ option.screen_limit }} tela(s)
+                                </small>
+                            </div>
+                        </template>
+                    </Select>
+                    <small v-if="selectedPlan" class="text-muted d-block mt-2">
+                        Este plano permite até {{ selectedPlan.media_limit }} mídia(s) por campanha.
+                    </small>
                 </div>
             </div>
             <div class="col-md-5">

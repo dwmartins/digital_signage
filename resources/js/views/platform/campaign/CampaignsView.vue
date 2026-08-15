@@ -378,7 +378,9 @@ onMounted(async () => {
                                     data.subscription?.plan?.name
                                 }}</strong
                                 ><small class="text-muted">{{
-                                    data.media_assets?.[0]?.name || "Sem mídia"
+                                    data.media_assets?.length
+                                        ? `${data.media_assets.length} mídia(s) vinculada(s)`
+                                        : "Sem mídia"
                                 }}</small>
                             </div></template
                         ></Column

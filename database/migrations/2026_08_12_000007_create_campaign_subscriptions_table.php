@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('status', 32)->default('pending')->index();
             $table->decimal('price', 10, 2);
             $table->unsignedSmallInteger('screen_limit');
+            $table->unsignedSmallInteger('media_limit')->default(1);
             $table->string('billing_cycle', 16);
             $table->string('media_type', 16);
             $table->text('notes')->nullable();

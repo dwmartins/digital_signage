@@ -462,7 +462,7 @@ onMounted(() => {
                         </template>
                     </Column>
 
-                    <Column header="Vínculo" style="min-width: 150px">
+                    <Column header="Vínculo" style="min-width: 170px">
                         <template #body="{ data }">
                             <Tag
                                 :value="data.campaigns_count > 0

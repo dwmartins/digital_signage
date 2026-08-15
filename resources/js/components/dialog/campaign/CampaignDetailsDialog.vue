@@ -220,6 +220,14 @@ watch(
                             <strong>{{ campaign.subscription?.screen_limit ?? "-" }}</strong>
                         </div>
                     </div>
+                    <div class="col-6 col-md-3">
+                        <div class="h-100 p-3 border rounded-3">
+                            <small class="d-block text-muted">Limite de mídias</small>
+                            <strong>
+                                {{ campaign.media_assets?.length ?? 0 }}/{{ campaign.subscription?.media_limit ?? "-" }}
+                            </strong>
+                        </div>
+                    </div>
                     <div class="col-12 col-md-6 col-lg-3">
                         <div class="h-100 p-3 border rounded-3">
                             <small class="d-block text-muted">Assinatura</small>

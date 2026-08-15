@@ -66,7 +66,7 @@ onMounted(fetchData);
 
         <div class="mb-4">
             <h2 class="mb-1">{{ isUpdate ? 'Editar campanha' : 'Nova campanha' }}</h2>
-            <p class="text-muted mb-0">{{ isUpdate ? 'Gerencie a contratação, o conteúdo e a classificação da campanha.' : 'Vincule uma assinatura disponível e envie o primeiro conteúdo da campanha.' }}</p>
+            <p class="text-muted mb-0">{{ isUpdate ? 'Gerencie a contratação, os conteúdos e a classificação da campanha.' : 'Vincule uma assinatura disponível e adicione os conteúdos permitidos pelo plano.' }}</p>
         </div>
 
         <Card v-if="loading">

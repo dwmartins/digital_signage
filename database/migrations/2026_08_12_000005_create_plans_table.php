@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->unsignedSmallInteger('screen_limit');
+            $table->unsignedSmallInteger('media_limit')->default(1);
             $table->string('billing_cycle', 16)->index();
             $table->string('media_type', 16)->index();
             $table->decimal('price', 10, 2);

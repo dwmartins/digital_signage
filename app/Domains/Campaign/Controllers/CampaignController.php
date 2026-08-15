@@ -171,70 +171,67 @@ class CampaignController extends Controller
     public function store(CampaignRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $path = null;
+        $paths = [];
+
         try {
-            $result = DB::transaction(function () use ($data, $request, &$path): array {
+            $result = DB::transaction(function () use ($data, $request, &$paths): array {
                 $subscription = CampaignSubscription::query()->whereNull('campaign_id')->lockForUpdate()->find($data['subscription_id']);
+
                 if (! $subscription) {
                     throw ValidationException::withMessages(['subscription_id' => 'Esta assinatura já possui uma campanha vinculada.']);
                 }
-                $this->validateDisplayPointLimit($data['display_point_ids'] ?? [], $subscription);
-                $media = isset($data['media_asset_id'])
-                    ? $this->libraryMedia($data['media_asset_id'], $subscription)
-                    : null;
 
-                if (! $media) {
-                    $fileData = $this->mediaFileService->store($request->file('file'), $subscription->user_id);
-                    $path = $fileData['path'];
-                    if ($fileData['type'] !== $subscription->media_type) {
-                        throw ValidationException::withMessages(['file' => 'O arquivo deve ser do tipo definido no plano da assinatura.']);
-                    }
-                    $media = MediaAsset::query()->create([...$fileData, 'user_id' => $subscription->user_id, 'uploaded_by' => $request->user()->id,
-                        'name' => $data['name'], 'description' => $data['description'] ?? null, 'processing_status' => MediaAsset::PROCESSING_READY,
-                        'approval_status' => MediaAsset::APPROVAL_PENDING]);
+                $this->validateDisplayPointLimit($data['display_point_ids'] ?? [], $subscription);
+
+                $libraryMedia = collect($data['media_asset_ids'] ?? [])
+                    ->map(fn (int $mediaId) => $this->libraryMedia($mediaId, $subscription));
+                $files = collect($request->file('files', []));
+
+                if ($libraryMedia->isEmpty() && $files->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'files' => 'Envie ao menos um arquivo ou selecione uma mídia da Biblioteca.',
+                    ]);
                 }
+
+                $this->validateMediaLimit($libraryMedia->count() + $files->count(), $subscription);
+
+                $uploadedMedia = $files->map(function ($file) use ($subscription, $data, $request, &$paths): MediaAsset {
+                    $fileData = $this->mediaFileService->store($file, $subscription->user_id);
+                    $paths[] = $fileData['path'];
+                    $this->validateMediaType($fileData['type'], $subscription);
+
+                    return MediaAsset::query()->create([
+                        ...$fileData,
+                        'user_id' => $subscription->user_id,
+                        'uploaded_by' => $request->user()->id,
+                        'name' => $data['name'],
+                        'description' => $data['description'] ?? null,
+                        'processing_status' => MediaAsset::PROCESSING_READY,
+                        'approval_status' => MediaAsset::APPROVAL_PENDING,
+                    ]);
+                });
+                $mediaAssets = $libraryMedia->concat($uploadedMedia)->values();
+
                 $campaign = Campaign::query()->create(['user_id' => $subscription->user_id, 'name' => $data['name'],
                     'description' => $data['description'] ?? null, 'status' => $data['status'] ?? Campaign::STATUS_ACTIVE]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
-                $campaign->mediaAssets()->sync([$media->id => ['position' => 1]]);
-                $this->syncMediaDistributions($campaign, $media);
+                $campaign->mediaAssets()->sync($mediaAssets->mapWithKeys(
+                    fn (MediaAsset $media, int $index) => [$media->id => ['position' => $index + 1]],
+                ));
+                $this->syncMediaDistributions($campaign, $mediaAssets);
                 $subscription->update(['campaign_id' => $campaign->id]);
 
-                return compact('campaign', 'media');
+                return compact('campaign', 'libraryMedia', 'uploadedMedia');
             });
             $campaign = $result['campaign']->load(['customer', 'categories', 'mediaAssets', 'subscription.plan']);
-            MediaHistoryLogger::record(
-                media: $result['media'],
-                event: isset($data['media_asset_id']) ? 'linked_to_campaign' : 'created',
-                description: isset($data['media_asset_id'])
-                    ? "Mídia {$result['media']->name} vinculada à campanha {$campaign->name}."
-                    : "Mídia {$result['media']->name} enviada pela campanha {$campaign->name}.",
-                newValues: $result['media']->toArray(),
-                metadata: ['source' => isset($data['media_asset_id']) ? 'library' : 'campaign', 'campaign_id' => $campaign->id],
-            );
-            AuditLogger::record(
-                module: AuditLog::MODULE_MEDIA,
-                action: isset($data['media_asset_id']) ? AuditLog::ACTION_UPDATED : AuditLog::ACTION_CREATED,
-                description: isset($data['media_asset_id'])
-                    ? "Mídia {$result['media']->name} vinculada à campanha {$campaign->name}."
-                    : "Mídia {$result['media']->name} enviada pela campanha {$campaign->name}.",
-                auditable: $result['media'],
-                newValues: $result['media']->toArray(),
-                metadata: [
-                    'event' => isset($data['media_asset_id']) ? 'linked_to_campaign' : 'created',
-                    'source' => isset($data['media_asset_id']) ? 'library' : 'campaign',
-                    'campaign_id' => $campaign->id,
-                ],
-                request: $request,
-            );
+            $result['libraryMedia']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'library', $request));
+            $result['uploadedMedia']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'campaign', $request));
             AuditLogger::record(module: AuditLog::MODULE_CAMPAIGNS, action: AuditLog::ACTION_CREATED, description: "Campanha {$campaign->name} criada e vinculada à assinatura #{$data['subscription_id']}.", auditable: $campaign, newValues: $campaign->toArray(), request: $request);
 
-            return response()->json(['message' => 'Campanha e mídia criadas com sucesso.', 'campaign' => $campaign], 201);
+            return response()->json(['message' => 'Campanha e mídias criadas com sucesso.', 'campaign' => $campaign], 201);
         } catch (Throwable $exception) {
-            if ($path) {
-                Storage::disk('local')->delete($path);
-            }
+            Storage::disk('local')->delete($paths);
             throw $exception;
         }
     }
@@ -250,9 +247,10 @@ class CampaignController extends Controller
             return response()->json(['message' => 'A assinatura de uma campanha existente não pode ser alterada.'], 422);
         }
         $oldValues = $campaign->load(['categories', 'displayPoints', 'mediaAssets', 'subscription'])->toArray();
-        $path = null;
+        $paths = [];
+
         try {
-            DB::transaction(function () use ($campaign, $data, $request, &$path): void {
+            $addedMedia = DB::transaction(function () use ($campaign, $data, $request, &$paths) {
                 $this->validateDisplayPointLimit($data['display_point_ids'] ?? [], $campaign->subscription);
                 $campaign->update([
                     'name' => $data['name'],
@@ -261,65 +259,47 @@ class CampaignController extends Controller
                 ]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
-                if ($request->hasFile('file') || isset($data['media_asset_id'])) {
-                    if (isset($data['media_asset_id'])) {
-                        $media = $this->libraryMedia($data['media_asset_id'], $campaign->subscription);
-                    }
+                $existingIds = $campaign->mediaAssets()->pluck('media_assets.id');
+                $libraryMedia = collect($data['media_asset_ids'] ?? [])
+                    ->unique()
+                    ->reject(fn (int $mediaId) => $existingIds->contains($mediaId))
+                    ->map(fn (int $mediaId) => $this->libraryMedia($mediaId, $campaign->subscription));
+                $files = collect($request->file('files', []));
+                $this->validateMediaLimit($existingIds->count() + $libraryMedia->count() + $files->count(), $campaign->subscription);
 
-                    if ($request->hasFile('file')) {
-                        $fileData = $this->mediaFileService->store($request->file('file'), $campaign->user_id);
-                        $path = $fileData['path'];
-                        if ($fileData['type'] !== $campaign->subscription->media_type) {
-                            throw ValidationException::withMessages(['file' => 'O arquivo deve ser do tipo definido no plano da assinatura.']);
-                        }
-                        $media = MediaAsset::query()->create([...$fileData, 'user_id' => $campaign->user_id, 'uploaded_by' => $request->user()->id,
-                            'name' => $data['name'], 'description' => $data['description'] ?? null, 'processing_status' => MediaAsset::PROCESSING_READY,
-                            'approval_status' => MediaAsset::APPROVAL_PENDING]);
-                        MediaHistoryLogger::record(
-                            media: $media,
-                            event: 'created',
-                            description: "Mídia {$media->name} enviada na substituição da campanha {$campaign->name}.",
-                            newValues: $media->toArray(),
-                            metadata: ['source' => 'campaign_replacement', 'campaign_id' => $campaign->id],
-                        );
-                        AuditLogger::record(
-                            module: AuditLog::MODULE_MEDIA,
-                            action: AuditLog::ACTION_CREATED,
-                            description: "Mídia {$media->name} enviada na substituição da campanha {$campaign->name}.",
-                            auditable: $media,
-                            newValues: $media->toArray(),
-                            metadata: ['event' => 'created', 'source' => 'campaign_replacement', 'campaign_id' => $campaign->id],
-                            request: $request,
-                        );
-                    }
+                $uploadedMedia = $files->map(function ($file) use ($campaign, $data, $request, &$paths): MediaAsset {
+                    $fileData = $this->mediaFileService->store($file, $campaign->user_id);
+                    $paths[] = $fileData['path'];
+                    $this->validateMediaType($fileData['type'], $campaign->subscription);
 
-                    $campaign->mediaAssets()->sync([$media->id => ['position' => 1]]);
+                    return MediaAsset::query()->create([
+                        ...$fileData,
+                        'user_id' => $campaign->user_id,
+                        'uploaded_by' => $request->user()->id,
+                        'name' => $data['name'],
+                        'description' => $data['description'] ?? null,
+                        'processing_status' => MediaAsset::PROCESSING_READY,
+                        'approval_status' => MediaAsset::APPROVAL_PENDING,
+                    ]);
+                });
+                $newMedia = $libraryMedia->concat($uploadedMedia)->values();
+                $position = $existingIds->count();
+                $campaign->mediaAssets()->syncWithoutDetaching($newMedia->mapWithKeys(
+                    fn (MediaAsset $media, int $index) => [$media->id => ['position' => $position + $index + 1]],
+                ));
+                $this->syncMediaDistributions($campaign, $campaign->mediaAssets()->get());
 
-                    if (isset($data['media_asset_id'])) {
-                        MediaHistoryLogger::record(
-                            media: $media,
-                            event: 'linked_to_campaign',
-                            description: "Mídia {$media->name} vinculada à campanha {$campaign->name}.",
-                            newValues: ['campaign_id' => $campaign->id],
-                            metadata: ['source' => 'library', 'campaign_id' => $campaign->id],
-                        );
-                    }
-                }
-
-                $this->syncMediaDistributions(
-                    $campaign,
-                    $campaign->mediaAssets()->first(),
-                );
-
+                return ['library' => $libraryMedia, 'uploaded' => $uploadedMedia];
             });
+
             $campaign->refresh()->load(['customer', 'categories', 'displayPoints.establishment', 'mediaAssets', 'subscription.plan']);
+            $addedMedia['library']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'library', $request));
+            $addedMedia['uploaded']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'campaign', $request));
             AuditLogger::record(module: AuditLog::MODULE_CAMPAIGNS, action: AuditLog::ACTION_UPDATED, description: "Campanha {$campaign->name} atualizada.", auditable: $campaign, oldValues: $oldValues, newValues: $campaign->toArray(), request: $request);
 
             return response()->json(['message' => 'Campanha atualizada com sucesso.', 'campaign' => $campaign]);
         } catch (Throwable $exception) {
-            if ($path) {
-                Storage::disk('local')->delete($path);
-            }
+            Storage::disk('local')->delete($paths);
             throw $exception;
         }
     }
@@ -354,7 +334,7 @@ class CampaignController extends Controller
 
         DB::transaction(function () use ($campaign, $media, $request): void {
             $campaign->mediaAssets()->detach($media->id);
-            $this->syncMediaDistributions($campaign, null);
+            $this->syncMediaDistributions($campaign, $campaign->mediaAssets()->get());
 
             MediaHistoryLogger::record(
                 media: $media,
@@ -368,7 +348,7 @@ class CampaignController extends Controller
         });
 
         return response()->json([
-            'message' => 'Mídia desvinculada. A campanha agora está sem conteúdo.',
+            'message' => 'Mídia desvinculada da campanha com sucesso.',
             'campaign' => $campaign->fresh()->load(['customer', 'categories', 'mediaAssets', 'subscription.customer', 'subscription.plan']),
         ]);
     }
@@ -389,7 +369,7 @@ class CampaignController extends Controller
 
         if (! $media) {
             throw ValidationException::withMessages([
-                'media_asset_id' => 'A mídia selecionada não pertence ao anunciante ou não é compatível com o plano.',
+                'media_asset_ids' => 'Uma das mídias selecionadas não pertence ao anunciante ou não é compatível com o plano.',
             ]);
         }
 
@@ -417,35 +397,83 @@ class CampaignController extends Controller
         }
     }
 
-    private function syncMediaDistributions(Campaign $campaign, ?MediaAsset $media): void
+    private function validateMediaLimit(int $mediaCount, CampaignSubscription $subscription): void
+    {
+        if ($mediaCount > $subscription->media_limit) {
+            throw ValidationException::withMessages([
+                'media_asset_ids' => "O plano permite no máximo {$subscription->media_limit} mídia(s) por campanha.",
+            ]);
+        }
+    }
+
+    private function validateMediaType(string $mediaType, CampaignSubscription $subscription): void
+    {
+        if ($mediaType !== $subscription->media_type) {
+            throw ValidationException::withMessages([
+                'files' => 'Todos os arquivos devem ser do tipo definido no plano da assinatura.',
+            ]);
+        }
+    }
+
+    private function recordMediaAdded(MediaAsset $media, Campaign $campaign, string $source, Request $request): void
+    {
+        $fromLibrary = $source === 'library';
+        $event = $fromLibrary ? 'linked_to_campaign' : 'created';
+        $description = $fromLibrary
+            ? "Mídia {$media->name} vinculada à campanha {$campaign->name}."
+            : "Mídia {$media->name} enviada pela campanha {$campaign->name}.";
+
+        MediaHistoryLogger::record(
+            media: $media,
+            event: $event,
+            description: $description,
+            newValues: $media->toArray(),
+            metadata: ['source' => $source, 'campaign_id' => $campaign->id],
+            user: $request->user(),
+        );
+        AuditLogger::record(
+            module: AuditLog::MODULE_MEDIA,
+            action: $fromLibrary ? AuditLog::ACTION_UPDATED : AuditLog::ACTION_CREATED,
+            description: $description,
+            auditable: $media,
+            newValues: $media->toArray(),
+            metadata: ['event' => $event, 'source' => $source, 'campaign_id' => $campaign->id],
+            request: $request,
+        );
+    }
+
+    private function syncMediaDistributions(Campaign $campaign, iterable $mediaAssets): void
     {
         $distributionQuery = MediaAssetDistribution::query()
             ->where('campaign_id', $campaign->id);
 
         $displayPointIds = $campaign->displayPoints()
             ->pluck('display_points.id');
+        $mediaIds = collect($mediaAssets)->pluck('id');
 
-        if (! $media || $displayPointIds->isEmpty()) {
+        if ($mediaIds->isEmpty() || $displayPointIds->isEmpty()) {
             $distributionQuery->delete();
 
             return;
         }
 
         (clone $distributionQuery)
-            ->where(function ($query) use ($media, $displayPointIds): void {
-                $query->where('media_asset_id', '!=', $media->id)
+            ->where(function ($query) use ($mediaIds, $displayPointIds): void {
+                $query->whereNotIn('media_asset_id', $mediaIds)
                     ->orWhereNotIn('display_point_id', $displayPointIds);
             })
             ->delete();
 
-        $displayPointIds->each(function (int $displayPointId) use ($campaign, $media): void {
-            MediaAssetDistribution::query()->firstOrCreate([
-                'campaign_id' => $campaign->id,
-                'media_asset_id' => $media->id,
-                'display_point_id' => $displayPointId,
-            ], [
-                'status' => MediaAssetDistribution::STATUS_PENDING,
-            ]);
+        $mediaIds->each(function (int $mediaId) use ($campaign, $displayPointIds): void {
+            $displayPointIds->each(function (int $displayPointId) use ($campaign, $mediaId): void {
+                MediaAssetDistribution::query()->firstOrCreate([
+                    'campaign_id' => $campaign->id,
+                    'media_asset_id' => $mediaId,
+                    'display_point_id' => $displayPointId,
+                ], [
+                    'status' => MediaAssetDistribution::STATUS_PENDING,
+                ]);
+            });
         });
     }
 

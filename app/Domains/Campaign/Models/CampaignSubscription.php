@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'campaign_id', 'plan_id', 'status', 'price', 'screen_limit', 'billing_cycle', 'media_type', 'notes', 'starts_at', 'ends_at', 'cancelled_at'])]
+#[Fillable(['user_id', 'campaign_id', 'plan_id', 'status', 'price', 'screen_limit', 'media_limit', 'billing_cycle', 'media_type', 'notes', 'starts_at', 'ends_at', 'cancelled_at'])]
 class CampaignSubscription extends Model
 {
     public const STATUS_PENDING = 'pending';
@@ -26,6 +26,7 @@ class CampaignSubscription extends Model
         return [
             'price' => 'decimal:2',
             'screen_limit' => 'integer',
+            'media_limit' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'cancelled_at' => 'datetime',

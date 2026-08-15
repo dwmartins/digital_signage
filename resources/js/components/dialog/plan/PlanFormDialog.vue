@@ -11,6 +11,7 @@ const defaults = () => ({
     name: "",
     description: "",
     screen_limit: 1,
+    media_limit: 1,
     billing_cycle: "monthly",
     media_type: "image",
     price: null,
@@ -89,7 +90,7 @@ watch(
                     />
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="field">
                     <label>Quantidade de telas</label
                     ><InputNumber
@@ -100,7 +101,18 @@ watch(
                     />
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
+                <div class="field">
+                    <label>Quantidade de mídias</label>
+                    <InputNumber
+                        v-model="form.media_limit"
+                        :min="1"
+                        :max="1000"
+                        fluid
+                    />
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="field">
                     <label>Cobrança</label
                     ><Select
@@ -112,7 +124,7 @@ watch(
                     />
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="field">
                     <label>Tipo de mídia</label
                     ><Select
@@ -124,7 +136,7 @@ watch(
                     />
                 </div>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-6">
                 <div class="field">
                     <label>Valor</label
                     ><InputNumber

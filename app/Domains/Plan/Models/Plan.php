@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'description', 'screen_limit', 'billing_cycle', 'media_type', 'price', 'status'])]
+#[Fillable(['name', 'slug', 'description', 'screen_limit', 'media_limit', 'billing_cycle', 'media_type', 'price', 'status'])]
 class Plan extends Model
 {
     public const BILLING_MONTHLY = 'monthly';
@@ -26,6 +26,7 @@ class Plan extends Model
     {
         return [
             'screen_limit' => 'integer',
+            'media_limit' => 'integer',
             'price' => 'decimal:2',
         ];
     }

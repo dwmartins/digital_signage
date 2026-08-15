@@ -48,10 +48,10 @@ class MediaFileService
         $analysis = (new \getID3)->analyze($path);
         $duration = isset($analysis['playtime_seconds']) ? (float) $analysis['playtime_seconds'] : null;
         if (! $duration || $duration <= 0) {
-            throw ValidationException::withMessages(['file' => 'Não foi possível identificar a duração do vídeo.']);
+            throw ValidationException::withMessages(['files' => 'Não foi possível identificar a duração de um dos vídeos.']);
         }
         if ($duration > 15) {
-            throw ValidationException::withMessages(['file' => 'O vídeo deve possuir no máximo 15 segundos.']);
+            throw ValidationException::withMessages(['files' => 'Todos os vídeos devem possuir no máximo 15 segundos.']);
         }
         $width = isset($analysis['video']['resolution_x']) ? (int) $analysis['video']['resolution_x'] : null;
         $height = isset($analysis['video']['resolution_y']) ? (int) $analysis['video']['resolution_y'] : null;

@@ -38,6 +38,14 @@ class Permission extends Model
 
     public const CATEGORIES_DELETE = 'categories.delete';
 
+    public const LOCALITIES_VIEW = 'localities.view';
+
+    public const LOCALITIES_CREATE = 'localities.create';
+
+    public const LOCALITIES_UPDATE = 'localities.update';
+
+    public const LOCALITIES_DELETE = 'localities.delete';
+
     public const ESTABLISHMENTS_VIEW = 'establishments.view';
 
     public const ESTABLISHMENTS_CREATE = 'establishments.create';
@@ -208,6 +216,30 @@ class Permission extends Model
                 'group' => 'categories',
                 'group_label' => 'Categorias',
                 'description' => 'Permite excluir categorias que não estejam em uso.',
+            ],
+            self::LOCALITIES_VIEW => [
+                'name' => 'Visualizar localidades',
+                'group' => 'localities',
+                'group_label' => 'Localidades',
+                'description' => 'Permite consultar estados, cidades e bairros cadastrados.',
+            ],
+            self::LOCALITIES_CREATE => [
+                'name' => 'Criar localidades',
+                'group' => 'localities',
+                'group_label' => 'Localidades',
+                'description' => 'Permite cadastrar estados, cidades e bairros.',
+            ],
+            self::LOCALITIES_UPDATE => [
+                'name' => 'Editar localidades',
+                'group' => 'localities',
+                'group_label' => 'Localidades',
+                'description' => 'Permite alterar localidades e seus status.',
+            ],
+            self::LOCALITIES_DELETE => [
+                'name' => 'Excluir localidades',
+                'group' => 'localities',
+                'group_label' => 'Localidades',
+                'description' => 'Permite excluir localidades sem vínculos.',
             ],
             self::ESTABLISHMENTS_VIEW => [
                 'name' => 'Visualizar estabelecimentos',

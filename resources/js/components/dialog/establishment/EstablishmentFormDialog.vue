@@ -2,18 +2,22 @@
 import { showAlert } from '@/helpers/alert';
 import { validateForm } from '@/helpers/validations';
 import establishmentService from '@/services/establishment.service';
+import localityService from '@/services/locality.service';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({ modelValue: Boolean, establishment: Object });
 const emit = defineEmits(['update:modelValue', 'saved']);
 const saving = ref(false);
+const loadingLocalities = ref(false);
+const states = ref([]);
+const cities = ref([]);
+const neighborhoods = ref([]);
 const fieldErrors = reactive({});
 const statusOptions = [
     { label: 'Ativo', value: 'active' },
     { label: 'Inativo', value: 'inactive' },
     { label: 'Bloqueado', value: 'blocked' },
 ];
-const stateOptions = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 const defaults = () => ({
     id: null,
     name: '',
@@ -25,9 +29,9 @@ const defaults = () => ({
     address: '',
     number: '',
     complement: '',
-    neighborhood: '',
-    city: '',
-    state: '',
+    state_id: null,
+    city_id: null,
+    neighborhood_id: null,
     zip_code: '',
     latitude: null,
     longitude: null,
@@ -38,6 +42,12 @@ const defaults = () => ({
 const form = reactive(defaults());
 const visible = computed({ get: () => props.modelValue, set: value => emit('update:modelValue', value) });
 const isUpdate = computed(() => !!props.establishment?.id);
+const availableCities = computed(() => cities.value.filter(
+    city => city.state_id === form.state_id,
+));
+const availableNeighborhoods = computed(() => neighborhoods.value.filter(
+    neighborhood => neighborhood.city_id === form.city_id,
+));
 const clearError = field => fieldErrors[field] = null;
 const clean = value => value?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || null;
 
@@ -50,13 +60,25 @@ const payload = () => ({
     longitude: form.longitude || null,
 });
 
+const fetchLocalities = async () => {
+    try {
+        loadingLocalities.value = true;
+        const response = await localityService.options({ include_inactive: true });
+        states.value = response.states ?? [];
+        cities.value = response.cities ?? [];
+        neighborhoods.value = response.neighborhoods ?? [];
+    } finally {
+        loadingLocalities.value = false;
+    }
+};
+
 const onSubmit = async () => {
     const required = [
         { id: 'name', label: 'Nome' },
         { id: 'document', label: 'CNPJ' },
         { id: 'address', label: 'Endereço' },
-        { id: 'city', label: 'Cidade' },
-        { id: 'state', label: 'Estado' },
+        { id: 'state_id', label: 'Estado' },
+        { id: 'city_id', label: 'Cidade' },
         { id: 'status', label: 'Status' },
     ];
     if (!validateForm(form, required, fieldErrors)) return;
@@ -78,10 +100,26 @@ const onSubmit = async () => {
 
 watch(() => props.modelValue, opened => {
     if (!opened) return;
-    Object.assign(form, defaults(), props.establishment ?? {});
+    Object.assign(form, defaults(), props.establishment ?? {}, {
+        state_id: props.establishment?.city?.state_id ?? null,
+    });
     form.latitude = form.latitude === null ? null : Number(form.latitude);
     form.longitude = form.longitude === null ? null : Number(form.longitude);
     Object.keys(fieldErrors).forEach(key => delete fieldErrors[key]);
+    fetchLocalities();
+});
+
+watch(() => form.state_id, (stateId, previousStateId) => {
+    if (previousStateId && stateId !== previousStateId) {
+        form.city_id = null;
+        form.neighborhood_id = null;
+    }
+});
+
+watch(() => form.city_id, (cityId, previousCityId) => {
+    if (previousCityId && cityId !== previousCityId) {
+        form.neighborhood_id = null;
+    }
 });
 </script>
 
@@ -120,9 +158,60 @@ watch(() => props.modelValue, opened => {
             <div class="col-md-7"><div class="field"><label><span class="text-danger me-1">*</span>Endereço</label><InputText v-model="form.address" :invalid="!!fieldErrors.address" fluid @input="clearError('address')" /></div></div>
             <div class="col-md-2"><div class="field"><label>Número</label><InputText v-model="form.number" fluid /></div></div>
             <div class="col-md-4"><div class="field"><label>Complemento</label><InputText v-model="form.complement" fluid /></div></div>
-            <div class="col-md-3"><div class="field"><label>Bairro</label><InputText v-model="form.neighborhood" fluid /></div></div>
-            <div class="col-md-3"><div class="field"><label><span class="text-danger me-1">*</span>Cidade</label><InputText v-model="form.city" :invalid="!!fieldErrors.city" fluid @input="clearError('city')" /></div></div>
-            <div class="col-md-2"><div class="field"><label><span class="text-danger me-1">*</span>UF</label><Select v-model="form.state" :options="stateOptions" filter :invalid="!!fieldErrors.state" fluid @change="clearError('state')" /></div></div>
+            <div class="col-md-3">
+                <div class="field">
+                    <label><span class="text-danger me-1">*</span>Estado</label>
+                    <Select
+                        v-model="form.state_id"
+                        :options="states"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Selecione"
+                        :loading="loadingLocalities"
+                        :invalid="!!fieldErrors.state_id"
+                        filter
+                        fluid
+                        @change="clearError('state_id')"
+                    >
+                        <template #option="{ option }">
+                            {{ option.name }} ({{ option.code }})
+                        </template>
+                    </Select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="field">
+                    <label><span class="text-danger me-1">*</span>Cidade</label>
+                    <Select
+                        v-model="form.city_id"
+                        :options="availableCities"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Selecione"
+                        :disabled="!form.state_id"
+                        :invalid="!!fieldErrors.city_id"
+                        filter
+                        fluid
+                        @change="clearError('city_id')"
+                    />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="field">
+                    <label>Bairro</label>
+                    <Select
+                        v-model="form.neighborhood_id"
+                        :options="availableNeighborhoods"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Opcional"
+                        :disabled="!form.city_id"
+                        showClear
+                        filter
+                        fluid
+                    />
+                </div>
+            </div>
 
             <div class="col-12"><Divider align="left"><b>Localização e operação</b></Divider></div>
             <div class="col-md-3"><div class="field"><label>Latitude</label><InputNumber v-model="form.latitude" :minFractionDigits="0" :maxFractionDigits="7" fluid /></div></div>

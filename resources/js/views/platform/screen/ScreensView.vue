@@ -189,7 +189,7 @@ onMounted(() => {
                                 <template #option="{ option }">
                                     <div class="d-flex flex-column">
                                         <span>#{{ option.id }} - {{ option.name }}</span>
-                                        <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
+                                        <small class="text-muted">{{ option.city?.name }} / {{ option.city?.state?.code }}</small>
                                     </div>
                                 </template>
                             </Select>
@@ -286,7 +286,7 @@ onMounted(() => {
                             <template #option="{ option }">
                                 <div class="d-flex flex-column">
                                     <span>#{{ option.id }} - {{ option.name }}</span>
-                                    <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
+                                    <small class="text-muted">{{ option.city?.name }} / {{ option.city?.state?.code }}</small>
                                 </div>
                             </template>
                         </Select>

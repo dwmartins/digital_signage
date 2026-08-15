@@ -1,6 +1,7 @@
 <script setup>
 import { showAlert } from "@/helpers/alert";
 import campaignService from "@/services/campaign.service";
+import localityService from "@/services/locality.service";
 import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from 'vue-router';
 import { API_URL } from '@/helpers/constants';
@@ -23,7 +24,10 @@ const contentSource = ref("upload");
 const libraryMedia = ref([]);
 const loadingLibrary = ref(false);
 const errors = reactive({});
-const pointFilters = reactive({ search: "", city: null, neighborhood: null, state: null });
+const states = ref([]);
+const cities = ref([]);
+const neighborhoods = ref([]);
+const pointFilters = reactive({ search: "", state_id: null, city_id: null, neighborhood_id: null });
 
 const form = reactive({ id: null, subscription_id: null, name: "", description: "", status: "active", category_ids: [], display_point_ids: [], file: null, media_asset_id: null });
 const campaignStatusOptions = [
@@ -33,6 +37,8 @@ const campaignStatusOptions = [
 
 const visible = computed({ get: () => props.modelValue, set: (value) => emit("update:modelValue", value) });
 const isUpdate = computed(() => !!props.campaign?.id);
+const availableCities = computed(() => cities.value.filter((city) => city.state_id === pointFilters.state_id));
+const availableNeighborhoods = computed(() => neighborhoods.value.filter((neighborhood) => neighborhood.city_id === pointFilters.city_id));
 
 const subscriptionOptions = computed(() => isUpdate.value && props.campaign?.subscription
     ? [props.campaign.subscription, ...props.subscriptions.filter((item) => item.id !== props.campaign.subscription.id)]
@@ -144,7 +150,7 @@ const confirmDisplayPoints = () => {
 };
 
 const clearPointFilters = () => {
-    Object.assign(pointFilters, { search: "", city: null, neighborhood: null, state: null });
+    Object.assign(pointFilters, { search: "", state_id: null, city_id: null, neighborhood_id: null });
     pointResults.value = [];
     pointPagination.value = { total: 0, current_page: 1 };
 };
@@ -154,9 +160,9 @@ const fetchDisplayPoints = async (page = 1) => {
         loadingPoints.value = true;
         const filters = {
             global: pointFilters.search || undefined,
-            state: pointFilters.state || undefined,
-            city: pointFilters.city || undefined,
-            neighborhood: pointFilters.neighborhood || undefined,
+            state_id: pointFilters.state_id || undefined,
+            city_id: pointFilters.city_id || undefined,
+            neighborhood_id: pointFilters.neighborhood_id || undefined,
         };
         const response = await campaignService.displayPointOptions(page, pointRows.value, filters);
         pointResults.value = response.data ?? [];
@@ -165,6 +171,17 @@ const fetchDisplayPoints = async (page = 1) => {
         showAlert("error", error.response?.data);
     } finally {
         loadingPoints.value = false;
+    }
+};
+
+const fetchLocalities = async () => {
+    try {
+        const response = await localityService.options();
+        states.value = response.states ?? [];
+        cities.value = response.cities ?? [];
+        neighborhoods.value = response.neighborhoods ?? [];
+    } catch (error) {
+        showAlert("error", error.response?.data);
     }
 };
 
@@ -230,8 +247,18 @@ watch(() => displayPointDialog.value, (opened) => {
     }
 });
 
+watch(() => pointFilters.state_id, () => {
+    pointFilters.city_id = null;
+    pointFilters.neighborhood_id = null;
+});
+
+watch(() => pointFilters.city_id, () => {
+    pointFilters.neighborhood_id = null;
+});
+
 watch(() => props.modelValue, (opened) => {
     if (!opened) return;
+    fetchLocalities();
     const campaign = props.campaign;
     Object.assign(form, {
         id: campaign?.id ?? null, subscription_id: campaign?.subscription?.id ?? null,
@@ -483,9 +510,55 @@ onBeforeUnmount(clearFilePreview);
         <div class="p-3 border rounded-3 mb-4 point-filter-panel">
             <div class="row g-3">
                 <div class="col-12"><div class="field"><label>Buscar</label><InputText v-model="pointFilters.search" placeholder="Nome do ponto, estabelecimento, local, CEP ou endereço" fluid /></div></div>
-                <div class="col-md-4"><div class="field"><label>UF</label><InputText v-model="pointFilters.state" maxlength="2" placeholder="Ex.: SP" fluid /></div></div>
-                <div class="col-md-4"><div class="field"><label>Cidade</label><InputText v-model="pointFilters.city" placeholder="Digite a cidade" fluid /></div></div>
-                <div class="col-md-4"><div class="field"><label>Bairro</label><InputText v-model="pointFilters.neighborhood" placeholder="Digite o bairro" fluid /></div></div>
+                <div class="col-md-4">
+                    <div class="field">
+                        <label>Estado</label>
+                        <Select
+                            v-model="pointFilters.state_id"
+                            :options="states"
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Todos"
+                            showClear
+                            filter
+                            fluid
+                        >
+                            <template #option="{ option }">{{ option.name }} ({{ option.code }})</template>
+                        </Select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field">
+                        <label>Cidade</label>
+                        <Select
+                            v-model="pointFilters.city_id"
+                            :options="availableCities"
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Todas"
+                            :disabled="!pointFilters.state_id"
+                            showClear
+                            filter
+                            fluid
+                        />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="field">
+                        <label>Bairro</label>
+                        <Select
+                            v-model="pointFilters.neighborhood_id"
+                            :options="availableNeighborhoods"
+                            optionLabel="name"
+                            optionValue="id"
+                            placeholder="Todos"
+                            :disabled="!pointFilters.city_id"
+                            showClear
+                            filter
+                            fluid
+                        />
+                    </div>
+                </div>
             </div>
             <div class="d-flex justify-content-between align-items-center gap-2 mt-3 flex-wrap"><small class="text-muted">{{ pointPagination.total }} ponto(s) encontrado(s)</small><div class="d-flex gap-2"><Button label="Limpar" icon="pi pi-filter-slash" severity="secondary" outlined size="small" @click="clearPointFilters" /><Button label="Buscar" icon="pi pi-search" size="small" :loading="loadingPoints" @click="fetchDisplayPoints(1)" /></div></div>
         </div>
@@ -495,8 +568,8 @@ onBeforeUnmount(clearFilePreview);
             :first="(pointPagination.current_page - 1) * pointRows" :rowsPerPageOptions="[5, 10, 20]"
             scrollable stripedRows class="point-table" @page="(event) => { pointRows = event.rows; fetchDisplayPoints(event.page + 1); }">
             <Column header="Ponto de exibição" style="min-width: 190px"><template #body="{ data }"><div class="d-flex flex-column"><strong>#{{ data.id }} - {{ data.name }}</strong><small class="text-muted">{{ data.location || 'Local não informado' }}</small></div></template></Column>
-            <Column header="Estabelecimento" style="min-width: 190px"><template #body="{ data }"><div class="d-flex flex-column"><strong>{{ data.establishment?.name }}</strong><small class="text-muted">{{ data.establishment?.city }}/{{ data.establishment?.state }}</small></div></template></Column>
-            <Column header="Endereço" style="min-width: 230px"><template #body="{ data }"><div class="d-flex flex-column"><span>{{ data.establishment?.address }}, {{ data.establishment?.number || 'S/N' }}</span><small class="text-muted">{{ data.establishment?.neighborhood || 'Bairro não informado' }} · CEP {{ data.establishment?.zip_code || 'não informado' }}</small></div></template></Column>
+            <Column header="Estabelecimento" style="min-width: 190px"><template #body="{ data }"><div class="d-flex flex-column"><strong>{{ data.establishment?.name }}</strong><small class="text-muted">{{ data.establishment?.city?.name }}/{{ data.establishment?.city?.state?.code }}</small></div></template></Column>
+            <Column header="Endereço" style="min-width: 230px"><template #body="{ data }"><div class="d-flex flex-column"><span>{{ data.establishment?.address }}, {{ data.establishment?.number || 'S/N' }}</span><small class="text-muted">{{ data.establishment?.neighborhood?.name || 'Bairro não informado' }} · CEP {{ data.establishment?.zip_code || 'não informado' }}</small></div></template></Column>
             <Column header="Horário" style="min-width: 180px"><template #body="{ data }"><span><i class="pi pi-clock me-2 text-primary"></i>{{ data.establishment?.opening_hours || 'Não informado' }}</span></template></Column>
             <Column style="width: 120px"><template #header><span class="w-100 text-center">Selecionar</span></template><template #body="{ data }"><div class="d-flex justify-content-center"><span v-tooltip.top="draftDisplayPointLimitReached && !draftDisplayPointIds.includes(data.id) ? displayPointLimitMessage : null"><Button :icon="draftDisplayPointIds.includes(data.id) ? 'pi pi-check' : 'pi pi-plus'" :severity="draftDisplayPointIds.includes(data.id) ? 'success' : 'secondary'" :outlined="!draftDisplayPointIds.includes(data.id)" :disabled="draftDisplayPointLimitReached && !draftDisplayPointIds.includes(data.id)" rounded @click="toggleDisplayPoint(data.id)" /></span></div></template></Column>
         </DataTable>

@@ -29,6 +29,13 @@ export const platformNavItems = [
             { label: 'Players (PC)', icon: 'pi pi-server', to: '/platform/players', permission: 'players.view' },
         ],
     },
+    {
+        label: 'Configurações',
+        icon: 'pi pi-cog',
+        children: [
+            { label: 'Localidades', icon: 'pi pi-map', to: '/platform/configuracoes/localidades', permission: 'localities.view' },
+        ],
+    },
     { label: 'Usuários suporte', icon: 'pi pi-headphones', to: '/platform/usuarios-suporte', permission: 'support-users.view' },
 ];
 

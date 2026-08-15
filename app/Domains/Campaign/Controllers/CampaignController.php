@@ -62,7 +62,10 @@ class CampaignController extends Controller
             'display_points' => DisplayPoint::query()
                 ->where('status', DisplayPoint::STATUS_ACTIVE)
                 ->whereHas('establishment', fn ($query) => $query->where('status', 'active'))
-                ->with('establishment:id,name,address,number,neighborhood,city,state,zip_code,opening_hours')
+                ->with([
+                    'establishment.city.state:id,name,code',
+                    'establishment.neighborhood:id,city_id,name',
+                ])
                 ->orderBy('name')
                 ->get(['id', 'establishment_id', 'name', 'location']),
             'subscriptions' => CampaignSubscription::query()
@@ -95,9 +98,9 @@ class CampaignController extends Controller
     {
         $validated = $request->validate([
             'global' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'max:2'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'neighborhood' => ['nullable', 'string', 'max:255'],
+            'state_id' => ['nullable', 'integer', 'exists:states,id'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'neighborhood_id' => ['nullable', 'integer', 'exists:neighborhoods,id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'min:1', 'max:20'],
         ]);
@@ -105,7 +108,10 @@ class CampaignController extends Controller
         $query = DisplayPoint::query()
             ->where('status', DisplayPoint::STATUS_ACTIVE)
             ->whereHas('establishment', fn ($query) => $query->where('status', 'active'))
-            ->with('establishment:id,name,address,number,neighborhood,city,state,zip_code,opening_hours');
+            ->with([
+                'establishment.city.state:id,name,code',
+                'establishment.neighborhood:id,city_id,name',
+            ]);
 
         if ($search = $validated['global'] ?? null) {
             $query->where(function ($query) use ($search): void {
@@ -115,16 +121,22 @@ class CampaignController extends Controller
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('address', 'like', "%{$search}%")
                         ->orWhere('zip_code', 'like', "%{$search}%")
-                        ->orWhere('city', 'like', "%{$search}%")
-                        ->orWhere('neighborhood', 'like', "%{$search}%")
-                        ->orWhere('state', 'like', "%{$search}%"));
+                        ->orWhereHas('city', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('neighborhood', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('city.state', fn ($query) => $query
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%")));
             });
         }
 
-        foreach (['state', 'city', 'neighborhood'] as $field) {
+        foreach (['city_id', 'neighborhood_id'] as $field) {
             if ($value = $validated[$field] ?? null) {
-                $query->whereHas('establishment', fn ($query) => $query->where($field, 'like', "%{$value}%"));
+                $query->whereHas('establishment', fn ($query) => $query->where($field, $value));
             }
+        }
+
+        if ($stateId = $validated['state_id'] ?? null) {
+            $query->whereHas('establishment.city', fn ($query) => $query->where('state_id', $stateId));
         }
 
         $points = $query->orderBy('name')->paginate((int) ($validated['perPage'] ?? 5));
@@ -143,7 +155,10 @@ class CampaignController extends Controller
     public function show(int $id): JsonResponse
     {
         $campaign = Campaign::query()->with([
-            'customer:id,name,last_name,email', 'categories:id,name', 'displayPoints.establishment', 'mediaAssets.approver:id,name,last_name',
+            'customer:id,name,last_name,email', 'categories:id,name',
+            'displayPoints.establishment.city.state:id,name,code',
+            'displayPoints.establishment.neighborhood:id,city_id,name',
+            'mediaAssets.approver:id,name,last_name',
             'mediaDistributions',
             'subscription.customer:id,name,last_name,email', 'subscription.plan',
         ])->find($id);

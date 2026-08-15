@@ -152,7 +152,7 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                                 <template #option="{ option }">
                                     <div class="d-flex flex-column">
                                         <span>#{{ option.id }} - {{ option.name }}</span>
-                                        <small class="text-muted">{{ option.city }} / {{ option.state }}</small>
+                                        <small class="text-muted">{{ option.city?.name }} / {{ option.city?.state?.code }}</small>
                                     </div>
                                 </template>
                             </Select>
@@ -202,7 +202,9 @@ onUnmounted(() => window.clearInterval(refreshInterval));
                         <template #body="{ data }">
                             <div class="d-flex flex-column">
                                 <span>#{{ data.establishment?.id }} - {{ data.establishment?.name }}</span>
-                                <small class="text-muted">{{ data.establishment?.city }} / {{ data.establishment?.state }}</small>
+                                <small class="text-muted">
+                                    {{ data.establishment?.city?.name }} / {{ data.establishment?.city?.state?.code }}
+                                </small>
                             </div>
                         </template>
                     </Column>

@@ -25,13 +25,17 @@ class EstablishmentController extends Controller
                 Establishment::STATUS_INACTIVE,
                 Establishment::STATUS_BLOCKED,
             ])],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'size:2'],
+            'state_id' => ['nullable', 'integer', 'exists:states,id'],
+            'city_id' => ['nullable', 'integer', 'exists:cities,id'],
+            'neighborhood_id' => ['nullable', 'integer', 'exists:neighborhoods,id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = Establishment::query();
+        $query = Establishment::query()->with([
+            'city.state:id,name,code',
+            'neighborhood:id,city_id,name',
+        ]);
 
         if ($search = $validated['global'] ?? null) {
             $query->where(function ($query) use ($search): void {
@@ -42,10 +46,14 @@ class EstablishmentController extends Controller
             });
         }
 
-        foreach (['status', 'city', 'state'] as $field) {
+        foreach (['status', 'city_id', 'neighborhood_id'] as $field) {
             if ($value = $validated[$field] ?? null) {
                 $query->where($field, $value);
             }
+        }
+
+        if ($stateId = $validated['state_id'] ?? null) {
+            $query->whereHas('city', fn ($query) => $query->where('state_id', $stateId));
         }
 
         $establishments = $query
@@ -68,7 +76,9 @@ class EstablishmentController extends Controller
      */
     public function store(EstablishmentRequest $request): JsonResponse
     {
-        $establishment = Establishment::query()->create($request->validated());
+        $data = $request->safe()->except('state_id');
+        $establishment = Establishment::query()->create($data);
+        $establishment->load(['city.state:id,name,code', 'neighborhood:id,city_id,name']);
 
         AuditLogger::record(
             module: AuditLog::MODULE_ESTABLISHMENTS,
@@ -96,8 +106,10 @@ class EstablishmentController extends Controller
             return $this->notFound();
         }
 
-        $oldValues = $establishment->only(array_keys($request->validated()));
-        $establishment->update($request->validated());
+        $data = $request->safe()->except('state_id');
+        $oldValues = $establishment->only(array_keys($data));
+        $establishment->update($data);
+        $establishment->load(['city.state:id,name,code', 'neighborhood:id,city_id,name']);
 
         AuditLogger::record(
             module: AuditLog::MODULE_ESTABLISHMENTS,
@@ -105,7 +117,7 @@ class EstablishmentController extends Controller
             description: "Estabelecimento {$establishment->name} atualizado.",
             auditable: $establishment,
             oldValues: $oldValues,
-            newValues: $establishment->only(array_keys($request->validated())),
+            newValues: $establishment->only(array_keys($data)),
             request: $request,
         );
 

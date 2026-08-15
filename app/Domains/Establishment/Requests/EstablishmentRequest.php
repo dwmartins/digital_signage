@@ -35,9 +35,17 @@ class EstablishmentRequest extends FormRequest
             'address' => ['required', 'string', 'max:255'],
             'number' => ['nullable', 'string', 'max:32'],
             'complement' => ['nullable', 'string', 'max:255'],
-            'neighborhood' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'size:2'],
+            'state_id' => ['required', 'integer', 'exists:states,id'],
+            'city_id' => [
+                'required',
+                'integer',
+                Rule::exists('cities', 'id')->where('state_id', $this->input('state_id')),
+            ],
+            'neighborhood_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('neighborhoods', 'id')->where('city_id', $this->input('city_id')),
+            ],
             'zip_code' => ['nullable', 'string', 'max:16'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
@@ -57,7 +65,6 @@ class EstablishmentRequest extends FormRequest
             'document' => strtoupper((string) $this->onlyLettersAndNumbers($this->input('document'))),
             'phone' => $this->onlyLettersAndNumbers($this->input('phone')),
             'zip_code' => $this->onlyLettersAndNumbers($this->input('zip_code')),
-            'state' => strtoupper(trim((string) $this->input('state'))),
         ]);
     }
 

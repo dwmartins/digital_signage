@@ -130,9 +130,9 @@ const formatAddress = (establishment) => {
     const address = [
         establishment.address,
         establishment.number,
-        establishment.neighborhood,
-        establishment.city,
-        establishment.state,
+        establishment.neighborhood?.name,
+        establishment.city?.name,
+        establishment.city?.state?.code,
     ].filter(Boolean);
 
     return address.length ? address.join(" · ") : "Endereço não informado";

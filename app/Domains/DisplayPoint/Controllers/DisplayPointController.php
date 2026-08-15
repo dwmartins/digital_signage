@@ -31,7 +31,7 @@ class DisplayPointController extends Controller
         ]);
 
         $query = DisplayPoint::query()->with([
-            'establishment:id,name,city,state',
+            'establishment.city.state:id,name,code',
             'screen:id,name,code',
             'player:id,name,code,last_seen_at',
         ]);
@@ -62,7 +62,10 @@ class DisplayPointController extends Controller
         $id = $validated['id'] ?? null;
 
         return response()->json([
-            'establishments' => Establishment::query()->orderBy('name')->get(['id', 'name', 'city', 'state']),
+            'establishments' => Establishment::query()
+                ->with('city.state:id,name,code')
+                ->orderBy('name')
+                ->get(['id', 'name', 'city_id']),
             'screens' => Screen::query()
                 ->where(fn ($query) => $query
                     ->whereDoesntHave('displayPoint')

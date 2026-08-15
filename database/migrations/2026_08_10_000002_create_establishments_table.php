@@ -19,9 +19,8 @@ return new class extends Migration
             $table->string('address');
             $table->string('number', 32)->nullable();
             $table->string('complement')->nullable();
-            $table->string('neighborhood')->nullable();
-            $table->string('city');
-            $table->string('state', 2);
+            $table->foreignId('city_id')->constrained()->restrictOnDelete();
+            $table->foreignId('neighborhood_id')->nullable()->constrained()->restrictOnDelete();
             $table->string('zip_code', 16)->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
@@ -30,7 +29,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['state', 'city']);
+            $table->index(['city_id', 'neighborhood_id']);
         });
     }
 

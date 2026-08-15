@@ -7,24 +7,29 @@ import TableSkeleton from '@/components/shared/TableSkeleton.vue';
 import { useQueryFilters } from '@/composables/useQueryFilters';
 import { showAlert } from '@/helpers/alert';
 import establishmentService from '@/services/establishment.service';
+import localityService from '@/services/locality.service';
 import { useAuthStore } from '@/stores/authStore';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 const authStore = useAuthStore();
 const establishments = ref([]);
 const establishment = ref(null);
+const states = ref([]);
+const cities = ref([]);
+const neighborhoods = ref([]);
 const loading = ref(false);
 const pagination = ref({});
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
 
-const dialogs = reactive({ form: false, delete: false });
+const dialogs = reactive({ form: false, delete: false, filters: false });
 
 const filters = reactive({
     global: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
-    city: { value: null, type: 'string' },
-    state: { value: null, type: 'string' },
+    state_id: { value: null, type: 'number' },
+    city_id: { value: null, type: 'number' },
+    neighborhood_id: { value: null, type: 'number' },
 });
 
 const statusOptions = [
@@ -32,8 +37,6 @@ const statusOptions = [
     { label: 'Inativo', value: 'inactive' },
     { label: 'Bloqueado', value: 'blocked' },
 ];
-
-const stateOptions = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 const breadcrumbItens = [
     { icon: 'pi pi-home', to: '/' },
@@ -53,6 +56,12 @@ const skeletonColumns = [
 const canCreate = computed(() => authStore.hasPermission('establishments.create'));
 const canUpdate = computed(() => authStore.hasPermission('establishments.update'));
 const canDelete = computed(() => authStore.hasPermission('establishments.delete'));
+const availableCities = computed(() => cities.value.filter(
+    city => !filters.state_id.value || city.state_id === filters.state_id.value,
+));
+const availableNeighborhoods = computed(() => neighborhoods.value.filter(
+    neighborhood => !filters.city_id.value || neighborhood.city_id === filters.city_id.value,
+));
 
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(filters, currentPage);
 
@@ -71,6 +80,13 @@ const fetchAll = async page => {
     }
 };
 
+const fetchLocalities = async () => {
+    const response = await localityService.options();
+    states.value = response.states ?? [];
+    cities.value = response.cities ?? [];
+    neighborhoods.value = response.neighborhoods ?? [];
+};
+
 const openDialog = (type, data = null) => {
     const allowed = type === 'delete' ? canDelete.value : (data ? canUpdate.value : canCreate.value);
     if (!allowed) return showAlert('warning', 'Você não possui permissão para realizar esta ação.');
@@ -80,6 +96,12 @@ const openDialog = (type, data = null) => {
 
 const clearFilters = () => {
     Object.values(filters).forEach(filter => filter.value = null);
+    dialogs.filters = false;
+    fetchAll(1);
+};
+
+const applyMobileFilters = () => {
+    dialogs.filters = false;
     fetchAll(1);
 };
 
@@ -90,10 +112,24 @@ const onPage = event => {
 
 const statusLabel = status => ({ active: 'Ativo', inactive: 'Inativo', blocked: 'Bloqueado' })[status] ?? '-';
 const statusSeverity = status => ({ active: 'success', inactive: 'warn', blocked: 'danger' })[status] ?? 'secondary';
-const location = data => [data.city, data.state].filter(Boolean).join(' / ');
+const location = data => [data.city?.name, data.city?.state?.code].filter(Boolean).join(' / ');
 
-onMounted(() => {
+watch(() => filters.state_id.value, (stateId, previousStateId) => {
+    if (previousStateId && stateId !== previousStateId) {
+        filters.city_id.value = null;
+        filters.neighborhood_id.value = null;
+    }
+});
+
+watch(() => filters.city_id.value, (cityId, previousCityId) => {
+    if (previousCityId && cityId !== previousCityId) {
+        filters.neighborhood_id.value = null;
+    }
+});
+
+onMounted(async () => {
     applyFromRoute();
+    await fetchLocalities();
     fetchAll(currentPage.value);
 });
 </script>
@@ -105,10 +141,10 @@ onMounted(() => {
             <Button label="Novo estabelecimento" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="openDialog('form')" />
         </div>
 
-        <Card class="mb-3">
+        <Card class="mb-3 d-none d-md-block">
             <template #content>
                 <form class="row g-3 align-items-end" @submit.prevent="fetchAll(1)">
-                    <div class="col-lg-3">
+                    <div class="col-lg-2">
                         <div class="field">
                             <label>Buscar</label>
                             <IconField>
@@ -121,7 +157,7 @@ onMounted(() => {
                             </IconField>
                         </div>
                     </div>
-                    <div class="col-md-4 col-lg-2">
+                    <div class="col-lg-2">
                         <div class="field">
                             <label>Status</label>
                             <Select
@@ -135,29 +171,56 @@ onMounted(() => {
                             />
                         </div>
                     </div>
-                    <div class="col-md-4 col-lg-2">
+                    <div class="col-lg-2">
                         <div class="field">
-                            <label>Cidade</label>
-                            <InputText v-model="filters.city.value" fluid />
-                        </div>
-                    </div>
-                    <div class="col-md-4 col-lg-2">
-                        <div class="field">
-                            <label>UF</label>
+                            <label>Estado</label>
                             <Select
-                                v-model="filters.state.value"
-                                :options="stateOptions"
-                                placeholder="Todas"
+                                v-model="filters.state_id.value"
+                                :options="states"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todos"
                                 showClear
                                 filter
                                 fluid
                             />
                         </div>
                     </div>
-                    <div class="col-12 col-lg-auto ms-lg-auto d-grid d-sm-flex gap-2">
+                    <div class="col-lg-2">
+                        <div class="field">
+                            <label>Cidade</label>
+                            <Select
+                                v-model="filters.city_id.value"
+                                :options="availableCities"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todas"
+                                :disabled="!filters.state_id.value"
+                                showClear
+                                filter
+                                fluid
+                            />
+                        </div>
+                    </div>
+                    <div class="col-lg-2">
+                        <div class="field">
+                            <label>Bairro</label>
+                            <Select
+                                v-model="filters.neighborhood_id.value"
+                                :options="availableNeighborhoods"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Todos"
+                                :disabled="!filters.city_id.value"
+                                showClear
+                                filter
+                                fluid
+                            />
+                        </div>
+                    </div>
+                    <div class="col-lg-2 d-flex gap-2">
                         <Button
                             type="button"
-                            label="Limpar"
                             icon="pi pi-filter-slash"
                             severity="secondary"
                             outlined
@@ -174,6 +237,94 @@ onMounted(() => {
                 </form>
             </template>
         </Card>
+
+        <div class="d-flex justify-content-end mb-3 d-md-none">
+            <Button
+                label="Filtros"
+                icon="pi pi-filter"
+                outlined
+                @click="dialogs.filters = true"
+            />
+        </div>
+
+        <Dialog
+            v-model:visible="dialogs.filters"
+            modal
+            header="Filtrar estabelecimentos"
+            :style="{ width: '32rem' }"
+            :breakpoints="{ '768px': '94vw' }"
+            :draggable="false"
+        >
+            <form id="establishmentFilters" class="row g-3" @submit.prevent="applyMobileFilters">
+                <div class="col-12">
+                    <div class="field">
+                        <label>Buscar</label>
+                        <InputText v-model="filters.global.value" fluid />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Status</label>
+                        <Select
+                            v-model="filters.status.value"
+                            :options="statusOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            showClear
+                            fluid
+                        />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Estado</label>
+                        <Select
+                            v-model="filters.state_id.value"
+                            :options="states"
+                            optionLabel="name"
+                            optionValue="id"
+                            showClear
+                            filter
+                            fluid
+                        />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Cidade</label>
+                        <Select
+                            v-model="filters.city_id.value"
+                            :options="availableCities"
+                            optionLabel="name"
+                            optionValue="id"
+                            :disabled="!filters.state_id.value"
+                            showClear
+                            filter
+                            fluid
+                        />
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="field">
+                        <label>Bairro</label>
+                        <Select
+                            v-model="filters.neighborhood_id.value"
+                            :options="availableNeighborhoods"
+                            optionLabel="name"
+                            optionValue="id"
+                            :disabled="!filters.city_id.value"
+                            showClear
+                            filter
+                            fluid
+                        />
+                    </div>
+                </div>
+            </form>
+            <template #footer>
+                <Button label="Limpar" severity="secondary" outlined @click="clearFilters" />
+                <Button label="Aplicar" type="submit" form="establishmentFilters" />
+            </template>
+        </Dialog>
 
         <Card><template #content>
             <TableSkeleton v-show="loading" :rows="itemsPerPage" :columns="skeletonColumns" class="mt-2 establishments-table-skeleton" />

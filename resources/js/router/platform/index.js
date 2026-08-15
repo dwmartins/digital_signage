@@ -9,6 +9,7 @@ import displayPoints from './displayPoints';
 import media from './media';
 import commercial from './commercial';
 import campaigns from './campaigns';
+import localities from './localities';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -45,6 +46,7 @@ export default [
             ...displayPoints,
             ...media,
             ...campaigns,
+            ...localities,
             ...commercial
         ]
     }

@@ -84,7 +84,10 @@ class ScreenController extends Controller
     public function filterOptions(): JsonResponse
     {
         return response()->json([
-            'establishments' => Establishment::query()->orderBy('name')->get(['id', 'name', 'city', 'state']),
+            'establishments' => Establishment::query()
+                ->with('city.state:id,name,code')
+                ->orderBy('name')
+                ->get(['id', 'name', 'city_id']),
             'display_points' => DisplayPoint::query()->orderBy('name')->get(['id', 'establishment_id', 'name']),
         ]);
     }

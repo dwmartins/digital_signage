@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Establishment\Models\Establishment;
+use App\Domains\Locality\Models\City;
+use App\Domains\Locality\Models\Neighborhood;
+use App\Domains\Locality\Models\State;
 use App\Domains\Player\Models\Player;
 use App\Domains\Screen\Models\Screen;
 use Illuminate\Database\Seeder;
@@ -15,59 +18,67 @@ class AddDemoNetworkSeeder extends Seeder
      */
     public function run(): void
     {
-        $market = Establishment::query()->updateOrCreate(
+        $state = State::query()->where('code', 'SP')->firstOrFail();
+        $agudos = City::query()->firstOrCreate(
+            ['state_id' => $state->id, 'name' => 'Agudos'],
+            ['status' => City::STATUS_ACTIVE],
+        );
+        $centro = Neighborhood::query()->firstOrCreate(
+            ['city_id' => $agudos->id, 'name' => 'Centro'],
+            ['status' => Neighborhood::STATUS_ACTIVE],
+        );
+
+        $paladarPastel = Establishment::query()->updateOrCreate(
             ['document' => '12345678000195'],
             [
-                'name' => 'Mercado Central',
-                'legal_name' => 'Mercado Central Comércio de Alimentos Ltda.',
+                'name' => 'Paladar Pastel',
+                'legal_name' => 'Paladar Pastel Ltda.',
                 'phone' => '11987654321',
-                'email' => 'contato@mercadocentral.demo',
+                'email' => 'contato@paladarpastel.demo',
                 'contact_name' => 'Mariana Souza',
-                'address' => 'Avenida Paulista',
+                'address' => 'Rua Treze de Maio',
                 'number' => '1000',
-                'neighborhood' => 'Bela Vista',
-                'city' => 'São Paulo',
-                'state' => 'SP',
-                'zip_code' => '01310100',
+                'city_id' => $agudos->id,
+                'neighborhood_id' => $centro->id,
+                'zip_code' => '17120000',
                 'status' => Establishment::STATUS_ACTIVE,
                 'opening_hours' => 'Todos os dias, das 08h às 22h',
                 'notes' => 'Estabelecimento fictício para demonstração.',
             ],
         );
 
-        $clinic = Establishment::query()->updateOrCreate(
+        $sorveteriaCentral = Establishment::query()->updateOrCreate(
             ['document' => '98765432000110'],
             [
-                'name' => 'Clínica Vida',
-                'legal_name' => 'Clínica Vida Serviços Médicos Ltda.',
+                'name' => 'Sorveteria Central',
+                'legal_name' => 'Sorveteria Central Ltda.',
                 'phone' => '1133334455',
-                'email' => 'recepcao@clinicavida.demo',
+                'email' => 'contato@sorveteriacentral.demo',
                 'contact_name' => 'Carlos Lima',
                 'address' => 'Rua das Flores',
                 'number' => '250',
-                'neighborhood' => 'Centro',
-                'city' => 'Campinas',
-                'state' => 'SP',
-                'zip_code' => '13010010',
+                'city_id' => $agudos->id,
+                'neighborhood_id' => $centro->id,
+                'zip_code' => '17120000',
                 'status' => Establishment::STATUS_ACTIVE,
                 'opening_hours' => 'Segunda a sexta, das 07h às 19h',
                 'notes' => 'Estabelecimento fictício para demonstração.',
             ],
         );
 
-        $marketScreen = $this->screen('TV-MERCADO-001', 'TV Entrada Mercado', 'Samsung', 'QMR 55', 55, Screen::STATUS_ACTIVE);
-        $checkoutScreen = $this->screen('TV-MERCADO-002', 'TV Área dos Caixas', 'LG', '55UR8750', 55, Screen::STATUS_ACTIVE);
-        $clinicScreen = $this->screen('TV-CLINICA-001', 'TV Recepção Clínica', 'Philips', '50PUG7408', 50, Screen::STATUS_ACTIVE);
+        $paladarScreen = $this->screen('TV-PALADAR-001', 'TV Entrada Paladar Pastel', 'Samsung', 'QMR 55', 55, Screen::STATUS_ACTIVE);
+        $checkoutScreen = $this->screen('TV-PALADAR-002', 'TV Área dos Caixas', 'LG', '55UR8750', 55, Screen::STATUS_ACTIVE);
+        $sorveteriaScreen = $this->screen('TV-SORVETERIA-001', 'TV Sorveteria Central', 'Philips', '50PUG7408', 50, Screen::STATUS_ACTIVE);
         $stockScreen = $this->screen('TV-ESTOQUE-001', 'TV Reserva', 'TCL', 'P635', 43, Screen::STATUS_STOCK);
 
-        $onlinePlayer = $this->player('PLAYER-MERCADO-001', 'Player Entrada Mercado', 'player-mercado-01', Player::STATUS_ACTIVE, now()->subSeconds(20), '192.168.10.21');
-        $offlinePlayer = $this->player('PLAYER-MERCADO-002', 'Player Área dos Caixas', 'player-mercado-02', Player::STATUS_ACTIVE, now()->subHours(2), '192.168.10.22');
-        $newPlayer = $this->player('PLAYER-CLINICA-001', 'Player Recepção Clínica', 'player-clinica-01', Player::STATUS_ACTIVE, null, null);
+        $onlinePlayer = $this->player('PLAYER-PALADAR-001', 'Player Entrada Paladar Pastel', 'player-paladar-01', Player::STATUS_ACTIVE, now()->subSeconds(20), '192.168.10.21');
+        $offlinePlayer = $this->player('PLAYER-PALADAR-002', 'Player Área dos Caixas', 'player-paladar-02', Player::STATUS_ACTIVE, now()->subHours(2), '192.168.10.22');
+        $newPlayer = $this->player('PLAYER-SORVETERIA-001', 'Player Sorveteria Central', 'player-sorveteria-01', Player::STATUS_ACTIVE, null, null);
         $stockPlayer = $this->player('PLAYER-ESTOQUE-001', 'Player Reserva', 'player-reserva-01', Player::STATUS_STOCK, null, null);
 
-        $this->displayPoint('Entrada principal', $market, $marketScreen, $onlinePlayer, 'Próximo à entrada principal');
-        $this->displayPoint('Área dos caixas', $market, $checkoutScreen, $offlinePlayer, 'Acima da fila dos caixas');
-        $this->displayPoint('Recepção', $clinic, $clinicScreen, $newPlayer, 'Sala de espera da recepção');
+        $this->displayPoint('Entrada principal', $paladarPastel, $paladarScreen, $onlinePlayer, 'Próximo à entrada principal');
+        $this->displayPoint('Área dos caixas', $paladarPastel, $checkoutScreen, $offlinePlayer, 'Acima da fila dos caixas');
+        $this->displayPoint('Área de atendimento', $sorveteriaCentral, $sorveteriaScreen, $newPlayer, 'Próximo ao balcão de atendimento');
 
         $stockScreen->update(['notes' => 'Equipamento disponível em estoque.']);
         $stockPlayer->update(['notes' => 'Player disponível para uma nova instalação.']);

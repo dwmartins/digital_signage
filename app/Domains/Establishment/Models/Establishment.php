@@ -3,8 +3,11 @@
 namespace App\Domains\Establishment\Models;
 
 use App\Domains\DisplayPoint\Models\DisplayPoint;
+use App\Domains\Locality\Models\City;
+use App\Domains\Locality\Models\Neighborhood;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -17,9 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'address',
     'number',
     'complement',
-    'neighborhood',
-    'city',
-    'state',
+    'city_id',
+    'neighborhood_id',
     'zip_code',
     'latitude',
     'longitude',
@@ -49,5 +51,15 @@ class Establishment extends Model
     public function displayPoints(): HasMany
     {
         return $this->hasMany(DisplayPoint::class);
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
+
+    public function neighborhood(): BelongsTo
+    {
+        return $this->belongsTo(Neighborhood::class);
     }
 }

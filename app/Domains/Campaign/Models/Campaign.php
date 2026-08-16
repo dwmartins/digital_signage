@@ -14,9 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'name', 'description', 'status'])]
+#[Fillable(['user_id', 'name', 'description', 'playback_mode', 'status'])]
 class Campaign extends Model
 {
+    public const PLAYBACK_SEQUENTIAL = 'sequential';
+
+    public const PLAYBACK_RANDOM = 'random';
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_INACTIVE = 'inactive';
@@ -35,6 +39,7 @@ class Campaign extends Model
     {
         return $this->belongsToMany(MediaAsset::class)
             ->withPivot(['position', 'display_duration_seconds'])
+            ->orderByPivot('position')
             ->withTimestamps();
     }
 

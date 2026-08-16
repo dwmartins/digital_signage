@@ -296,7 +296,14 @@ watch(
             </section>
 
             <section>
-                <h5 class="mb-3">Mídias da campanha</h5>
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
+                    <h5 class="mb-0">Mídias da campanha</h5>
+                    <Tag
+                        :value="campaign.playback_mode === 'random' ? 'Ordem aleatória' : 'Em sequência'"
+                        :icon="campaign.playback_mode === 'random' ? 'pi pi-shuffle' : 'pi pi-list'"
+                        severity="info"
+                    />
+                </div>
                 <div v-if="campaign.media_assets?.length" class="d-flex flex-column gap-3">
                     <article
                         v-for="media in campaign.media_assets"

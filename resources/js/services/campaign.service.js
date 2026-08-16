@@ -51,7 +51,7 @@ export default {
     toFormData(data) {
         const payload = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-            if (["category_ids", "display_point_ids", "media_asset_ids"].includes(key)) {
+            if (["category_ids", "display_point_ids", "media_asset_ids", "media_order"].includes(key)) {
                 value.forEach((id) => payload.append(`${key}[]`, id));
             } else if (key === "files") {
                 value.forEach((file) => payload.append("files[]", file));

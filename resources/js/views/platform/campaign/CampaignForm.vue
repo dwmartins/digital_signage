@@ -23,16 +23,22 @@ const filePreviewUrls = ref([]);
 const contentSource = ref("upload");
 const libraryMedia = ref([]);
 const loadingLibrary = ref(false);
+const draggingMediaKey = ref(null);
+const dragOverMediaKey = ref(null);
 const errors = reactive({});
 const states = ref([]);
 const cities = ref([]);
 const neighborhoods = ref([]);
 const pointFilters = reactive({ search: "", state_id: null, city_id: null, neighborhood_id: null });
 
-const form = reactive({ id: null, subscription_id: null, name: "", description: "", status: "active", category_ids: [], display_point_ids: [], files: [], media_asset_ids: [] });
+const form = reactive({ id: null, subscription_id: null, name: "", description: "", playback_mode: "sequential", status: "active", category_ids: [], display_point_ids: [], files: [], media_asset_ids: [], media_order: [] });
 const campaignStatusOptions = [
     { label: "Ativa", value: "active" },
     { label: "Inativa", value: "inactive" },
+];
+const playbackModeOptions = [
+    { label: "Em sequência", value: "sequential" },
+    { label: "Ordem aleatória", value: "random" },
 ];
 
 const visible = computed({ get: () => props.modelValue, set: (value) => emit("update:modelValue", value) });
@@ -52,6 +58,7 @@ const router = useRouter();
 const campaignMedia = computed(() => props.campaign?.media_assets ?? props.campaign?.mediaAssets ?? []);
 const customerId = computed(() => props.campaign?.user_id ?? selectedSubscription.value?.user_id ?? null);
 const mediaLimit = computed(() => Number(selectedSubscription.value?.media_limit ?? 1));
+const supportsMultipleMedia = computed(() => mediaLimit.value > 1);
 const mediaCapacity = computed(() => Math.max(mediaLimit.value - campaignMedia.value.length, 0));
 const availableMediaSlots = computed(() => Math.max(
     mediaCapacity.value - form.files.length - form.media_asset_ids.length,
@@ -70,12 +77,14 @@ const draftDisplayPointLimitReached = computed(() => displayPointLimit.value > 0
 
 const displayPointLimitMessage = computed(() => `O plano permite no máximo ${displayPointLimit.value} ponto(s) de exibição.`);
 
-const displayedMedia = computed(() => [
+const mediaKey = (media) => media.isNew ? `file:${media.fileIndex}` : `media:${media.id}`;
+const selectedMedia = computed(() => [
     ...campaignMedia.value,
     ...libraryMedia.value.filter((media) => form.media_asset_ids.includes(media.id)
         && !campaignMedia.value.some((current) => current.id === media.id)),
     ...form.files.map((file, index) => ({
         id: `new-${index}`,
+        fileIndex: index,
         name: file.name,
         original_name: file.name,
         size_bytes: file.size,
@@ -84,6 +93,15 @@ const displayedMedia = computed(() => [
         isNew: true,
     })),
 ]);
+const displayedMedia = computed(() => {
+    const mediaMap = new Map(selectedMedia.value.map((media) => [mediaKey(media), media]));
+    const ordered = form.media_order
+        .map((key) => mediaMap.get(key))
+        .filter(Boolean);
+    const orderedKeys = new Set(ordered.map(mediaKey));
+
+    return [...ordered, ...selectedMedia.value.filter((media) => !orderedKeys.has(mediaKey(media)))];
+});
 
 const formatSize = (bytes) =>
     bytes >= 1048576
@@ -206,6 +224,41 @@ const removeDisplayPoint = (id) => {
     form.display_point_ids = form.display_point_ids.filter((item) => item !== id);
 };
 
+const moveMedia = (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= form.media_order.length) return;
+    const order = [...form.media_order];
+    [order[index], order[target]] = [order[target], order[index]];
+    form.media_order = order;
+};
+
+const startMediaDrag = (event, media) => {
+    draggingMediaKey.value = mediaKey(media);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', draggingMediaKey.value);
+};
+
+const dropMedia = (targetMedia) => {
+    const sourceKey = draggingMediaKey.value;
+    const targetKey = mediaKey(targetMedia);
+    if (!sourceKey || sourceKey === targetKey) return clearMediaDrag();
+
+    const order = [...form.media_order];
+    const sourceIndex = order.indexOf(sourceKey);
+    const targetIndex = order.indexOf(targetKey);
+    if (sourceIndex === -1 || targetIndex === -1) return clearMediaDrag();
+
+    order.splice(sourceIndex, 1);
+    order.splice(targetIndex, 0, sourceKey);
+    form.media_order = order;
+    clearMediaDrag();
+};
+
+const clearMediaDrag = () => {
+    draggingMediaKey.value = null;
+    dragOverMediaKey.value = null;
+};
+
 const money = (value) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value ?? 0);
 const customerName = (item) => `${item?.customer?.name ?? ""} ${item?.customer?.last_name ?? ""}`.trim();
 
@@ -247,6 +300,7 @@ const submit = async () => {
     errors.name = form.name.trim() ? null : "Informe o nome.";
     errors.file = !isUpdate.value && !form.files.length && !form.media_asset_ids.length ? "Envie ao menos um arquivo ou selecione uma mídia da Biblioteca." : null;
     if (Object.values(errors).some(Boolean)) return;
+    form.media_order = displayedMedia.value.map(mediaKey);
     try {
         saving.value = true;
         const response = isUpdate.value ? await campaignService.update(form) : await campaignService.create(form);
@@ -259,6 +313,7 @@ watch(() => form.subscription_id, () => {
     form.files = [];
     form.media_asset_ids = [];
     clearFilePreview();
+    if (!supportsMultipleMedia.value) form.playback_mode = "sequential";
     fetchLibraryMedia();
 });
 
@@ -267,6 +322,13 @@ watch(() => form.media_asset_ids, (value) => {
     form.files = [];
     clearFilePreview();
 }, { deep: true });
+
+watch(() => selectedMedia.value.map(mediaKey), (keys) => {
+    form.media_order = [
+        ...form.media_order.filter((key) => keys.includes(key)),
+        ...keys.filter((key) => !form.media_order.includes(key)),
+    ];
+}, { immediate: true });
 
 watch(() => displayPointDialog.value, (opened) => {
     if (!opened) {
@@ -291,10 +353,11 @@ watch(() => props.modelValue, (opened) => {
     const campaign = props.campaign;
     Object.assign(form, {
         id: campaign?.id ?? null, subscription_id: campaign?.subscription?.id ?? null,
-        name: campaign?.name ?? "", description: campaign?.description ?? "", status: campaign?.status ?? "active",
+        name: campaign?.name ?? "", description: campaign?.description ?? "",
+        playback_mode: campaign?.playback_mode ?? "sequential", status: campaign?.status ?? "active",
         category_ids: campaign?.categories?.map((item) => item.id) ?? [],
         display_point_ids: campaign?.display_points?.map((item) => item.id) ?? [],
-        files: [], media_asset_ids: []
+        files: [], media_asset_ids: [], media_order: campaignMedia.value.map(mediaKey)
     });
     contentSource.value = "upload";
     Object.keys(errors).forEach((key) => delete errors[key]);
@@ -467,6 +530,29 @@ onBeforeUnmount(clearFilePreview);
                     />
                 </div>
             </div>
+            <div v-if="supportsMultipleMedia" class="col-md-6">
+                <div class="field">
+                    <label class="d-flex align-items-center gap-2">
+                        Ordem de reprodução
+                        <i
+                            class="pi pi-question-circle text-primary cursor-help"
+                            v-tooltip.top="'Define como as mídias desta campanha serão alternadas nos pontos de exibição.'"
+                        ></i>
+                    </label>
+                    <Select
+                        v-model="form.playback_mode"
+                        :options="playbackModeOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        fluid
+                    />
+                    <small class="text-muted">
+                        {{ form.playback_mode === 'random'
+                            ? 'As mídias serão escolhidas em ordem aleatória.'
+                            : 'As mídias serão exibidas seguindo a ordem da campanha.' }}
+                    </small>
+                </div>
+            </div>
             <div class="col-md-6">
                 <div class="field"><label>Categorias</label>
                     <MultiSelect v-model="form.category_ids" :options="categories" optionLabel="name" optionValue="id"
@@ -541,6 +627,92 @@ onBeforeUnmount(clearFilePreview);
                             <template #option="{ option }"><div class="d-flex align-items-center gap-3 py-1 w-100"><div class="library-thumb"><img v-if="option.type === 'image'" :src="option.content_url" :alt="option.name" /><i v-else class="pi pi-video"></i></div><div class="d-flex flex-column flex-grow-1 min-width-0"><strong>{{ option.name }}</strong><small class="text-muted">{{ option.original_name }} · {{ formatSize(option.size_bytes) }}</small></div><Tag :value="option.approval_status === 'approved' ? 'Aprovada' : option.approval_status === 'awaiting_subscription' ? 'Aguardando assinatura' : 'Aguardando aprovação'" :severity="option.approval_status === 'approved' ? 'success' : 'warn'" /></div></template>
                         </MultiSelect>
                         <small v-if="!loadingLibrary && !availableLibraryMedia.length" class="text-muted d-block mt-2">Não há novas mídias compatíveis na Biblioteca deste anunciante.</small>
+                    </div>
+
+                    <div v-if="displayedMedia.length > 1" class="mt-3 p-3 border rounded-3">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
+                            <div>
+                                <strong>Ordem das mídias</strong>
+                                <small class="d-block text-muted">
+                                    Defina qual conteúdo aparecerá primeiro, segundo e assim por diante.
+                                </small>
+                            </div>
+                            <Tag
+                                :value="form.playback_mode === 'random' ? 'Aleatória' : 'Em sequência'"
+                                :icon="form.playback_mode === 'random' ? 'pi pi-shuffle' : 'pi pi-list'"
+                                severity="info"
+                            />
+                        </div>
+
+                        <div v-if="form.playback_mode === 'random'" class="p-3 rounded-3 bg-body-tertiary text-muted">
+                            <i class="pi pi-info-circle me-2 text-primary"></i>
+                            No modo aleatório, o sistema escolherá a próxima mídia sem seguir uma posição fixa.
+                        </div>
+
+                        <div v-else class="d-flex flex-column gap-2">
+                            <article
+                                v-for="(media, index) in displayedMedia"
+                                :key="mediaKey(media)"
+                                class="d-flex align-items-center gap-3 p-2 border rounded-3 media-order-item"
+                                :class="{
+                                    dragging: draggingMediaKey === mediaKey(media),
+                                    'drag-over': dragOverMediaKey === mediaKey(media),
+                                }"
+                                @dragover.prevent="dragOverMediaKey = mediaKey(media)"
+                                @dragleave="dragOverMediaKey = null"
+                                @drop.prevent="dropMedia(media)"
+                            >
+                                <Tag :value="String(index + 1)" rounded />
+                                <img
+                                    v-if="media.type === 'image'"
+                                    :src="media.isNew ? media.content_url : `${API_URL}/media-assets/${media.id}/content`"
+                                    :alt="media.name"
+                                    class="media-order-thumb rounded-2"
+                                />
+                                <div v-else class="media-order-thumb d-flex align-items-center justify-content-center rounded-2">
+                                    <i class="pi pi-video text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <strong class="d-block text-truncate">
+                                        {{ media.original_name ?? media.name }}
+                                    </strong>
+                                    <small class="text-muted">
+                                        {{ index === 0 ? 'Primeira mídia' : `${index + 1}ª mídia` }}
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <Button
+                                        type="button"
+                                        icon="pi pi-arrow-up"
+                                        severity="secondary"
+                                        text
+                                        rounded
+                                        size="small"
+                                        :disabled="index === 0"
+                                        v-tooltip.top="'Mover para cima'"
+                                        @click="moveMedia(index, -1)"
+                                    />
+                                    <Button
+                                        type="button"
+                                        icon="pi pi-arrow-down"
+                                        severity="secondary"
+                                        text
+                                        rounded
+                                        size="small"
+                                        :disabled="index === displayedMedia.length - 1"
+                                        v-tooltip.top="'Mover para baixo'"
+                                        @click="moveMedia(index, 1)"
+                                    />
+                                </div>
+                                <i
+                                    class="pi pi-bars media-drag-handle"
+                                    draggable="true"
+                                    v-tooltip.left="'Arraste para alterar a posição'"
+                                    @dragstart="startMediaDrag($event, media)"
+                                    @dragend="clearMediaDrag"
+                                ></i>
+                            </article>
+                        </div>
                     </div>
                     <small v-if="errors.file" class="text-danger">{{ errors.file }}</small>
                     <small v-else-if="isUpdate" class="text-muted d-block">Deixe vazio para manter as mídias atuais.</small>
@@ -876,5 +1048,36 @@ onBeforeUnmount(clearFilePreview);
 
 .video-icon i {
     font-size: 1.4rem;
+}
+
+.media-order-thumb {
+    width: 52px;
+    height: 38px;
+    flex: 0 0 52px;
+    background: var(--p-surface-100);
+    object-fit: cover;
+}
+
+.media-order-item {
+    transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+}
+
+.media-order-item.dragging {
+    opacity: 0.45;
+}
+
+.media-order-item.drag-over {
+    border-color: var(--p-primary-color) !important;
+    background: var(--p-primary-50);
+}
+
+.media-drag-handle {
+    padding: 0.65rem 0.4rem;
+    color: var(--p-text-muted-color);
+    cursor: grab;
+}
+
+.media-drag-handle:active {
+    cursor: grabbing;
 }
 </style>

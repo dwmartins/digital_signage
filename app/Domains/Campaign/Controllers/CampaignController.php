@@ -213,12 +213,15 @@ class CampaignController extends Controller
                 $mediaAssets = $libraryMedia->concat($uploadedMedia)->values();
 
                 $campaign = Campaign::query()->create(['user_id' => $subscription->user_id, 'name' => $data['name'],
-                    'description' => $data['description'] ?? null, 'status' => $data['status'] ?? Campaign::STATUS_ACTIVE]);
+                    'description' => $data['description'] ?? null,
+                    'playback_mode' => $this->playbackMode($data, $subscription),
+                    'status' => $data['status'] ?? Campaign::STATUS_ACTIVE]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
                 $campaign->mediaAssets()->sync($mediaAssets->mapWithKeys(
                     fn (MediaAsset $media, int $index) => [$media->id => ['position' => $index + 1]],
                 ));
+                $this->applyMediaOrder($campaign, $data['media_order'] ?? [], $uploadedMedia);
                 $this->syncMediaDistributions($campaign, $mediaAssets);
                 $subscription->update(['campaign_id' => $campaign->id]);
 
@@ -255,6 +258,7 @@ class CampaignController extends Controller
                 $campaign->update([
                     'name' => $data['name'],
                     'description' => $data['description'] ?? null,
+                    'playback_mode' => $this->playbackMode($data, $campaign->subscription),
                     'status' => $data['status'] ?? $campaign->status,
                 ]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
@@ -287,6 +291,7 @@ class CampaignController extends Controller
                 $campaign->mediaAssets()->syncWithoutDetaching($newMedia->mapWithKeys(
                     fn (MediaAsset $media, int $index) => [$media->id => ['position' => $position + $index + 1]],
                 ));
+                $this->applyMediaOrder($campaign, $data['media_order'] ?? [], $uploadedMedia);
                 $this->syncMediaDistributions($campaign, $campaign->mediaAssets()->get());
 
                 return ['library' => $libraryMedia, 'uploaded' => $uploadedMedia];
@@ -334,6 +339,7 @@ class CampaignController extends Controller
 
         DB::transaction(function () use ($campaign, $media, $request): void {
             $campaign->mediaAssets()->detach($media->id);
+            $this->applyMediaOrder($campaign, []);
             $this->syncMediaDistributions($campaign, $campaign->mediaAssets()->get());
 
             MediaHistoryLogger::record(
@@ -404,6 +410,38 @@ class CampaignController extends Controller
                 'media_asset_ids' => "O plano permite no máximo {$subscription->media_limit} mídia(s) por campanha.",
             ]);
         }
+    }
+
+    private function playbackMode(array $data, CampaignSubscription $subscription): string
+    {
+        if ($subscription->media_limit <= 1) {
+            return Campaign::PLAYBACK_SEQUENTIAL;
+        }
+
+        return $data['playback_mode'] ?? Campaign::PLAYBACK_SEQUENTIAL;
+    }
+
+    private function applyMediaOrder(Campaign $campaign, array $order, iterable $uploadedMedia = []): void
+    {
+        $currentMediaIds = $campaign->mediaAssets()
+            ->pluck('media_assets.id');
+        $fileKeys = collect($uploadedMedia)
+            ->values()
+            ->mapWithKeys(fn (MediaAsset $media, int $index) => ["file:{$index}" => $media->id]);
+        $mediaKeys = $currentMediaIds
+            ->mapWithKeys(fn (int $mediaId) => ["media:{$mediaId}" => $mediaId]);
+        $keyMap = $mediaKeys->merge($fileKeys);
+        $orderedIds = collect($order)
+            ->map(fn (string $key) => $keyMap->get($key))
+            ->filter(fn ($mediaId) => $mediaId && $currentMediaIds->contains($mediaId))
+            ->unique()
+            ->values();
+        $orderedIds = $orderedIds
+            ->concat($currentMediaIds->diff($orderedIds))
+            ->values();
+
+        $orderedIds->each(fn (int $mediaId, int $index) => $campaign->mediaAssets()
+            ->updateExistingPivot($mediaId, ['position' => $index + 1]));
     }
 
     private function validateMediaType(string $mediaType, CampaignSubscription $subscription): void

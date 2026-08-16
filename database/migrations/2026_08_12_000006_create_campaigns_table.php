@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->string('playback_mode', 16)->default('sequential');
             $table->string('status', 32)->default('active')->index();
             $table->timestamps();
 

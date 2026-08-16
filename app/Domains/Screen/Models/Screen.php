@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'brand',
     'model',
     'screen_size',
-    'orientation',
     'resolution_width',
     'resolution_height',
     'status',
@@ -21,10 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Screen extends Model
 {
-    public const ORIENTATION_LANDSCAPE = 'landscape';
-
-    public const ORIENTATION_PORTRAIT = 'portrait';
-
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_MAINTENANCE = 'maintenance';

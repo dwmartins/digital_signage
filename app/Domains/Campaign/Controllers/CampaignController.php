@@ -67,7 +67,7 @@ class CampaignController extends Controller
                     'establishment.neighborhood:id,city_id,name',
                 ])
                 ->orderBy('name')
-                ->get(['id', 'establishment_id', 'name', 'location']),
+                ->get(['id', 'establishment_id', 'name', 'location', 'orientation']),
             'subscriptions' => CampaignSubscription::query()
                 ->whereNull('campaign_id')
                 ->whereIn('status', [CampaignSubscription::STATUS_PENDING, CampaignSubscription::STATUS_ACTIVE])

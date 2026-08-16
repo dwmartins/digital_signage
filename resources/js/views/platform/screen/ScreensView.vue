@@ -26,7 +26,6 @@ const filters = reactive({
     global: { value: null, type: 'string' },
     establishment_id: { value: null, type: 'number' },
     display_point_id: { value: null, type: 'number' },
-    orientation: { value: null, type: 'string' },
     status: { value: null, type: 'string' },
 });
 
@@ -35,11 +34,6 @@ const statusOptions = [
     { label: 'Manutenção', value: 'maintenance' },
     { label: 'Bloqueada', value: 'blocked' },
     { label: 'Estoque', value: 'stock' },
-];
-
-const orientationOptions = [
-    { label: 'Horizontal', value: 'landscape' },
-    { label: 'Vertical', value: 'portrait' },
 ];
 
 const breadcrumbItens = [
@@ -129,7 +123,6 @@ const onPage = event => {
 
 const statusLabel = status => statusOptions.find(option => option.value === status)?.label ?? '-';
 const statusSeverity = status => ({ active: 'success', maintenance: 'warn', blocked: 'danger', stock: 'contrast' })[status] ?? 'secondary';
-const orientationLabel = orientation => orientationOptions.find(option => option.value === orientation)?.label ?? '-';
 
 onMounted(() => {
     applyFromRoute();
@@ -226,20 +219,6 @@ onMounted(() => {
                             />
                         </div>
                     </div>
-                    <div class="col-md-4 col-lg-2">
-                        <div class="field">
-                            <label>Orientação</label>
-                            <Select
-                                v-model="filters.orientation.value"
-                                :options="orientationOptions"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Todas"
-                                showClear
-                                fluid
-                            />
-                        </div>
-                    </div>
                     <div class="col-12 col-lg-auto ms-lg-auto d-grid d-sm-flex gap-2">
                         <Button
                             type="button"
@@ -306,12 +285,6 @@ onMounted(() => {
                         <Select v-model="filters.status.value" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Todos" showClear fluid />
                     </div>
                 </div>
-                <div class="col-12">
-                    <div class="field">
-                        <label>Orientação</label>
-                        <Select v-model="filters.orientation.value" :options="orientationOptions" optionLabel="label" optionValue="value" placeholder="Todas" showClear fluid />
-                    </div>
-                </div>
             </form>
             <template #footer>
                 <Button label="Limpar" icon="pi pi-filter-slash" severity="secondary" outlined :loading="loading" @click="clearFilters" />
@@ -348,8 +321,8 @@ onMounted(() => {
                 <Column header="Configuração" style="min-width: 155px">
                     <template #body="{ data }">
                         <div class="d-flex flex-column">
-                            <span>{{ orientationLabel(data.orientation) }}</span>
-                            <small class="text-muted">{{ data.resolution_width }} × {{ data.resolution_height }}</small>
+                            <span>{{ data.resolution_width }} × {{ data.resolution_height }}</span>
+                            <small class="text-muted">Resolução</small>
                         </div>
                     </template>
                 </Column>
@@ -380,7 +353,7 @@ onMounted(() => {
 
 <style scoped>
 :deep(.screens-table-skeleton) {
-    --table-skeleton-columns: minmax(210px, 1.2fr) 190px 155px 155px 120px 110px;
-    --table-skeleton-min-width: 940px;
+    --table-skeleton-columns: minmax(210px, 1.2fr) 190px 155px 120px 110px;
+    --table-skeleton-min-width: 785px;
 }
 </style>

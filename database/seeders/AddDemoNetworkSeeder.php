@@ -93,7 +93,6 @@ class AddDemoNetworkSeeder extends Seeder
                 'brand' => $brand,
                 'model' => $model,
                 'screen_size' => $size,
-                'orientation' => Screen::ORIENTATION_LANDSCAPE,
                 'resolution_width' => 1920,
                 'resolution_height' => 1080,
                 'status' => $status,

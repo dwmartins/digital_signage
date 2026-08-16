@@ -21,6 +21,10 @@ class DisplayPointController extends Controller
         $validated = $request->validate([
             'global' => ['nullable', 'string', 'max:255'],
             'establishment_id' => ['nullable', 'integer', 'exists:establishments,id'],
+            'orientation' => ['nullable', Rule::in([
+                DisplayPoint::ORIENTATION_LANDSCAPE,
+                DisplayPoint::ORIENTATION_PORTRAIT,
+            ])],
             'status' => ['nullable', Rule::in([
                 DisplayPoint::STATUS_ACTIVE,
                 DisplayPoint::STATUS_MAINTENANCE,
@@ -38,7 +42,7 @@ class DisplayPointController extends Controller
         if ($search = $validated['global'] ?? null) {
             $query->where(fn ($q) => $q->where('name', 'like', "%{$search}%")->orWhere('location', 'like', "%{$search}%"));
         }
-        foreach (['establishment_id', 'status'] as $field) {
+        foreach (['establishment_id', 'orientation', 'status'] as $field) {
             if ($value = $validated[$field] ?? null) {
                 $query->where($field, $value);
             }

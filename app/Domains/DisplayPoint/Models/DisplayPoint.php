@@ -9,9 +9,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['establishment_id', 'screen_id', 'player_id', 'name', 'location', 'status', 'notes'])]
+#[Fillable(['establishment_id', 'screen_id', 'player_id', 'name', 'location', 'orientation', 'status', 'notes'])]
 class DisplayPoint extends Model
 {
+    public const ORIENTATION_LANDSCAPE = 'landscape';
+
+    public const ORIENTATION_PORTRAIT = 'portrait';
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_MAINTENANCE = 'maintenance';

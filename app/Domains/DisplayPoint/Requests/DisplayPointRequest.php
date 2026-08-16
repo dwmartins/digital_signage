@@ -21,6 +21,10 @@ class DisplayPointRequest extends FormRequest
             'player_id' => ['nullable', 'integer', 'exists:players,id', Rule::unique('display_points', 'player_id')->ignore($this->route('id'))],
             'name' => ['required', 'string', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
+            'orientation' => ['required', Rule::in([
+                DisplayPoint::ORIENTATION_LANDSCAPE,
+                DisplayPoint::ORIENTATION_PORTRAIT,
+            ])],
             'status' => ['required', Rule::in([DisplayPoint::STATUS_ACTIVE, DisplayPoint::STATUS_MAINTENANCE, DisplayPoint::STATUS_INACTIVE])],
             'notes' => ['nullable', 'string', 'max:5000'],
         ];

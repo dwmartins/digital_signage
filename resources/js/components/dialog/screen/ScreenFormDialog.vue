@@ -14,10 +14,6 @@ const statusOptions = [
     { label: 'Bloqueada', value: 'blocked' },
     { label: 'Estoque', value: 'stock' },
 ];
-const orientationOptions = [
-    { label: 'Horizontal', value: 'landscape' },
-    { label: 'Vertical', value: 'portrait' },
-];
 const resolutionOptions = [
     { label: 'HD — 1280 × 720', width: 1280, height: 720 },
     { label: 'Full HD — 1920 × 1080', width: 1920, height: 1080 },
@@ -30,7 +26,6 @@ const defaults = () => ({
     brand: '',
     model: '',
     screen_size: null,
-    orientation: 'landscape',
     resolution_width: 1920,
     resolution_height: 1080,
     status: 'active',
@@ -59,7 +54,6 @@ const onSubmit = async () => {
     const required = [
         { id: 'name', label: 'Nome' },
         { id: 'code', label: 'Código' },
-        { id: 'orientation', label: 'Orientação' },
         { id: 'resolution_width', label: 'Largura' },
         { id: 'resolution_height', label: 'Altura' },
         { id: 'status', label: 'Status' },
@@ -126,10 +120,9 @@ watch(() => props.modelValue, opened => {
             </div></div>
 
             <div class="col-12"><Divider align="left"><b>Configuração de exibição</b></Divider></div>
-            <div class="col-md-4"><div class="field"><label>Orientação</label><Select v-model="form.orientation" :options="orientationOptions" optionLabel="label" optionValue="value" fluid /></div></div>
-            <div class="col-md-4"><div class="field"><label>Resolução padrão</label><Select v-model="selectedResolution" :options="resolutionOptions" optionLabel="label" placeholder="Personalizada" showClear fluid /></div></div>
-            <div class="col-6 col-md-2"><div class="field"><label>Largura</label><InputNumber v-model="form.resolution_width" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
-            <div class="col-6 col-md-2"><div class="field"><label>Altura</label><InputNumber v-model="form.resolution_height" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
+            <div class="col-md-6"><div class="field"><label>Resolução padrão</label><Select v-model="selectedResolution" :options="resolutionOptions" optionLabel="label" placeholder="Personalizada" showClear fluid /></div></div>
+            <div class="col-6 col-md-3"><div class="field"><label>Largura</label><InputNumber v-model="form.resolution_width" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
+            <div class="col-6 col-md-3"><div class="field"><label>Altura</label><InputNumber v-model="form.resolution_height" :min="240" :max="16384" :useGrouping="false" fluid /></div></div>
             <div class="col-12"><div class="field"><label>Observações</label><Textarea v-model="form.notes" rows="4" maxlength="5000" autoResize fluid /></div></div>
         </form>
 

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->string('brand')->nullable();
             $table->string('model')->nullable();
             $table->decimal('screen_size', 5, 1)->nullable();
-            $table->string('orientation', 16)->default('landscape');
             $table->unsignedSmallInteger('resolution_width')->default(1920);
             $table->unsignedSmallInteger('resolution_height')->default(1080);
             $table->string('status', 32)->default('active')->index();

@@ -276,6 +276,10 @@ watch(
                                     {{ point.location || "Local interno não informado" }}
                                 </small>
                                 <small class="d-block mt-1 text-muted">
+                                    <i :class="point.orientation === 'portrait' ? 'pi pi-arrows-v' : 'pi pi-arrows-h'" class="me-1"></i>
+                                    Exibição {{ point.orientation === "portrait" ? "vertical" : "horizontal" }}
+                                </small>
+                                <small class="d-block mt-1 text-muted">
                                     {{ formatAddress(point.establishment) }}
                                 </small>
                                 <small class="d-block mt-1 text-muted">

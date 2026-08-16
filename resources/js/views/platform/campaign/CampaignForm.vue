@@ -426,7 +426,7 @@ onBeforeUnmount(clearFilePreview);
                     <div v-for="point in selectedDisplayPoints" :key="point.id" class="col-12 col-md-6">
                         <article class="d-flex align-items-start gap-2 h-100 p-3 border rounded-3 selected-point-card">
                             <i class="pi pi-map-marker"></i>
-                            <div class="flex-grow-1"><strong>{{ point.establishment?.name }}</strong><span>{{ point.name }} · {{ point.location || 'Local não informado' }}</span><small>{{ point.establishment?.opening_hours || 'Horário não informado' }}</small></div>
+                            <div class="flex-grow-1"><strong>{{ point.establishment?.name }}</strong><span>{{ point.name }} · {{ point.location || 'Local não informado' }}</span><small>{{ point.orientation === 'portrait' ? 'Vertical' : 'Horizontal' }} · {{ point.establishment?.opening_hours || 'Horário não informado' }}</small></div>
                             <Button icon="pi pi-times" severity="danger" text rounded size="small" v-tooltip.top="'Desvincular ponto'" @click="removeDisplayPoint(point.id)" />
                         </article>
                     </div>
@@ -617,6 +617,7 @@ onBeforeUnmount(clearFilePreview);
             :first="(pointPagination.current_page - 1) * pointRows" :rowsPerPageOptions="[5, 10, 20]"
             scrollable stripedRows class="point-table" @page="(event) => { pointRows = event.rows; fetchDisplayPoints(event.page + 1); }">
             <Column header="Ponto de exibição" style="min-width: 190px"><template #body="{ data }"><div class="d-flex flex-column"><strong>#{{ data.id }} - {{ data.name }}</strong><small class="text-muted">{{ data.location || 'Local não informado' }}</small></div></template></Column>
+            <Column header="Orientação" style="width: 125px"><template #body="{ data }"><Tag :value="data.orientation === 'portrait' ? 'Vertical' : 'Horizontal'" :icon="data.orientation === 'portrait' ? 'pi pi-arrows-v' : 'pi pi-arrows-h'" severity="info" /></template></Column>
             <Column header="Estabelecimento" style="min-width: 190px"><template #body="{ data }"><div class="d-flex flex-column"><strong>{{ data.establishment?.name }}</strong><small class="text-muted">{{ data.establishment?.city?.name }}/{{ data.establishment?.city?.state?.code }}</small></div></template></Column>
             <Column header="Endereço" style="min-width: 230px"><template #body="{ data }"><div class="d-flex flex-column"><span>{{ data.establishment?.address }}, {{ data.establishment?.number || 'S/N' }}</span><small class="text-muted">{{ data.establishment?.neighborhood?.name || 'Bairro não informado' }} · CEP {{ data.establishment?.zip_code || 'não informado' }}</small></div></template></Column>
             <Column header="Horário" style="min-width: 180px"><template #body="{ data }"><span><i class="pi pi-clock me-2 text-primary"></i>{{ data.establishment?.opening_hours || 'Não informado' }}</span></template></Column>

@@ -24,10 +24,6 @@ class ScreenController extends Controller
             'global' => ['nullable', 'string', 'max:255'],
             'establishment_id' => ['nullable', 'integer', 'exists:establishments,id'],
             'display_point_id' => ['nullable', 'integer', 'exists:display_points,id'],
-            'orientation' => ['nullable', Rule::in([
-                Screen::ORIENTATION_LANDSCAPE,
-                Screen::ORIENTATION_PORTRAIT,
-            ])],
             'status' => ['nullable', Rule::in([
                 Screen::STATUS_ACTIVE,
                 Screen::STATUS_MAINTENANCE,
@@ -49,7 +45,7 @@ class ScreenController extends Controller
             });
         }
 
-        foreach (['orientation', 'status'] as $field) {
+        foreach (['status'] as $field) {
             if ($value = $validated[$field] ?? null) {
                 $query->where($field, $value);
             }

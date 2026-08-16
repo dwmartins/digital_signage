@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('player_id')->nullable()->unique()->constrained()->nullOnDelete();
             $table->string('name');
             $table->string('location')->nullable();
+            $table->string('orientation', 16)->default('landscape')->index();
             $table->string('status', 32)->default('active')->index();
             $table->text('notes')->nullable();
             $table->timestamps();

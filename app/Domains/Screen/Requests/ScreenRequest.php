@@ -32,10 +32,6 @@ class ScreenRequest extends FormRequest
             'brand' => ['nullable', 'string', 'max:255'],
             'model' => ['nullable', 'string', 'max:255'],
             'screen_size' => ['nullable', 'numeric', 'min:1', 'max:999.9'],
-            'orientation' => ['required', Rule::in([
-                Screen::ORIENTATION_LANDSCAPE,
-                Screen::ORIENTATION_PORTRAIT,
-            ])],
             'resolution_width' => ['required', 'integer', 'min:240', 'max:16384'],
             'resolution_height' => ['required', 'integer', 'min:240', 'max:16384'],
             'status' => ['required', Rule::in([

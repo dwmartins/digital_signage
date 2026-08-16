@@ -353,24 +353,6 @@ onMounted(async () => {
                             </div></template
                         ></Column
                     >
-                    <Column header="Categorias" style="min-width: 190px"
-                        ><template #body="{ data }"
-                            ><div
-                                v-if="data.categories?.length"
-                                class="d-flex flex-wrap gap-1"
-                            >
-                                <Tag
-                                    v-for="item in data.categories"
-                                    :key="item.id"
-                                    :value="item.name"
-                                    severity="secondary"
-                                />
-                            </div>
-                            <span v-else class="text-muted"
-                                >Sem categoria</span
-                            ></template
-                        ></Column
-                    >
                     <Column header="Plano / Mídia" style="min-width: 190px"
                         ><template #body="{ data }"
                             ><div class="d-flex flex-column">

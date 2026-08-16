@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CampaignSubscriptionController extends Controller
 {
@@ -140,7 +141,11 @@ class CampaignSubscriptionController extends Controller
 
     public function approve(Request $request, int $id): JsonResponse
     {
-        $result = DB::transaction(function () use ($id, $request): array {
+        $validated = $request->validate([
+            'payment_method' => ['nullable', Rule::in(Transaction::paymentMethods())],
+        ]);
+
+        $result = DB::transaction(function () use ($id, $request, $validated): array {
             $subscription = CampaignSubscription::query()->lockForUpdate()->with(['campaign.mediaAssets', 'invoices'])->find($id);
             if (! $subscription) {
                 return ['error' => 'Assinatura não encontrada.', 'code' => 404];
@@ -159,8 +164,14 @@ class CampaignSubscriptionController extends Controller
             $alreadyCharged = $subscription->invoices->isNotEmpty();
 
             if ((float) $subscription->price > 0 && ! $alreadyCharged) {
+                if (! isset($validated['payment_method'])) {
+                    throw ValidationException::withMessages([
+                        'payment_method' => 'Selecione o método de pagamento utilizado.',
+                    ]);
+                }
+
                 $invoice = Invoice::query()->create(['campaign_subscription_id' => $subscription->id, 'user_id' => $subscription->user_id, 'number' => 'INV-'.now()->format('Ymd').'-'.strtoupper(Str::random(8)), 'amount' => $subscription->price, 'status' => Invoice::STATUS_PAID, 'due_at' => now(), 'paid_at' => now()]);
-                $transaction = Transaction::query()->create(['invoice_id' => $invoice->id, 'user_id' => $subscription->user_id, 'type' => Transaction::TYPE_CHARGE, 'status' => Transaction::STATUS_PAID, 'amount' => $subscription->price, 'processed_at' => now(), 'metadata' => $subscription->notes ? ['notes' => $subscription->notes] : null]);
+                $transaction = Transaction::query()->create(['invoice_id' => $invoice->id, 'user_id' => $subscription->user_id, 'payment_method' => $validated['payment_method'], 'type' => Transaction::TYPE_CHARGE, 'status' => Transaction::STATUS_PAID, 'amount' => $subscription->price, 'processed_at' => now(), 'metadata' => $subscription->notes ? ['notes' => $subscription->notes] : null]);
             }
 
             AuditLogger::record(module: AuditLog::MODULE_SUBSCRIPTIONS, action: AuditLog::ACTION_UPDATED, description: (float) $subscription->price > 0 ? "Assinatura #{$subscription->id} aprovada e paga." : "Assinatura gratuita #{$subscription->id} aprovada sem transação.", auditable: $subscription, newValues: $subscription->toArray(), request: $request);

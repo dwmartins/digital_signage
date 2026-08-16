@@ -1,11 +1,20 @@
 <script setup>
 import { showAlert } from "@/helpers/alert";
 import subscriptionService from "@/services/subscription.service";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({ modelValue: Boolean, subscription: Object });
 const emit = defineEmits(["update:modelValue", "approved"]);
 const approving = ref(false);
+const paymentMethod = ref(null);
+const paymentMethodOptions = [
+    { label: "PIX", value: "pix", icon: "pi pi-qrcode" },
+    { label: "Cartão de crédito", value: "credit_card", icon: "pi pi-credit-card" },
+    { label: "Cartão de débito", value: "debit_card", icon: "pi pi-credit-card" },
+    { label: "Boleto bancário", value: "bank_slip", icon: "pi pi-barcode" },
+    { label: "Transferência bancária", value: "bank_transfer", icon: "pi pi-building-columns" },
+    { label: "Dinheiro", value: "cash", icon: "pi pi-money-bill" },
+];
 const visible = computed({
     get: () => props.modelValue,
     set: (value) => emit("update:modelValue", value),
@@ -21,10 +30,15 @@ const subscriptionTarget = computed(() => props.subscription?.campaign?.name
     : `#${props.subscription?.id} de ${props.subscription?.customer?.name ?? "cliente anunciante"}`);
 
 const approve = async () => {
+    if (!isFree.value && !paymentMethod.value) {
+        return showAlert("warning", "Selecione o método de pagamento utilizado.");
+    }
+
     try {
         approving.value = true;
         const response = await subscriptionService.approve(
             props.subscription.id,
+            { payment_method: paymentMethod.value },
         );
         showAlert("success", response.message);
         emit("approved");
@@ -35,6 +49,10 @@ const approve = async () => {
         approving.value = false;
     }
 };
+
+watch(() => props.modelValue, (opened) => {
+    if (opened) paymentMethod.value = null;
+});
 </script>
 
 <template>
@@ -59,6 +77,24 @@ const approve = async () => {
                         isFree ? "Grátis" : money(subscription?.price)
                     }}</strong>
                 </div>
+                <div v-if="!isFree" class="field mb-3">
+                    <label>Método de pagamento *</label>
+                    <Select
+                        v-model="paymentMethod"
+                        :options="paymentMethodOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Selecione como o pagamento foi realizado"
+                        fluid
+                    >
+                        <template #option="{ option }">
+                            <div class="d-flex align-items-center gap-2">
+                                <i :class="option.icon"></i>
+                                <span>{{ option.label }}</span>
+                            </div>
+                        </template>
+                    </Select>
+                </div>
                 <small class="text-muted">{{
                     isFree
                         ? "Esta ação ativará a assinatura sem gerar fatura ou transação."
@@ -77,6 +113,7 @@ const approve = async () => {
                 icon="pi pi-check"
                 severity="success"
                 :loading="approving"
+                :disabled="!isFree && !paymentMethod"
                 @click="approve"
         /></template>
     </Dialog>

@@ -33,6 +33,15 @@ const typeOptions = [
     { label: "Estorno", value: "refund" },
 ];
 
+const paymentMethodOptions = [
+    { label: "PIX", value: "pix", icon: "pi pi-qrcode" },
+    { label: "Cartão de crédito", value: "credit_card", icon: "pi pi-credit-card" },
+    { label: "Cartão de débito", value: "debit_card", icon: "pi pi-credit-card" },
+    { label: "Boleto bancário", value: "bank_slip", icon: "pi pi-barcode" },
+    { label: "Transferência bancária", value: "bank_transfer", icon: "pi pi-building-columns" },
+    { label: "Dinheiro", value: "cash", icon: "pi pi-money-bill" },
+];
+
 const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
     filters,
     currentPage,
@@ -45,6 +54,8 @@ const money = (v) =>
     }).format(v ?? 0);
 
 const label = (s) => statusOptions.find((x) => x.value === s)?.label ?? s;
+const paymentMethod = (value) => paymentMethodOptions.find((option) => option.value === value)
+    ?? { label: "Não informado", icon: "pi pi-minus-circle" };
 
 const severity = (s) =>
     ({
@@ -156,6 +167,7 @@ onMounted(() => {
                         { bodyWidth: '150px' },
                         { bodyWidth: '100px' },
                         { bodyWidth: '90px' },
+                        { bodyWidth: '140px' },
                         { bodyWidth: '130px' },
                     ]" /><DataTable
                     v-show="!loading && items.length"
@@ -208,6 +220,12 @@ onMounted(() => {
                         ><template #body="{ data }"
                             ><strong>{{ money(data.amount) }}</strong></template
                         ></Column
+                    ><Column header="Pagamento" style="min-width: 190px"
+                        ><template #body="{ data }"
+                            ><Tag
+                                :value="paymentMethod(data.payment_method).label"
+                                :icon="paymentMethod(data.payment_method).icon"
+                                severity="info" /></template></Column
                     ><Column header="Status" style="width: 110px"
                         ><template #body="{ data }"
                             ><Tag

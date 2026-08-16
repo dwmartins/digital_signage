@@ -29,9 +29,9 @@ export default {
         ).data;
     },
     /** Aprova e gera a cobrança inicial. */
-    async approve(id) {
+    async approve(id, data = {}) {
         return (
-            await axios.patch(`${API_URL}/campaign-subscriptions/${id}/approve`)
+            await axios.patch(`${API_URL}/campaign-subscriptions/${id}/approve`, data)
         ).data;
     },
     /** Cancela uma assinatura. */

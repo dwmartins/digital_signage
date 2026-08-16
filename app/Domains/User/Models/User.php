@@ -164,10 +164,14 @@ class User extends Authenticatable
     /**
      * Verifica se o usuário suporte possui uma permissão específica.
      */
-    public function hasPermission(string $permission): bool
+    public function hasPermission(?string $permission): bool
     {
         if ($this->isAdmin()) {
             return true;
+        }
+
+        if ($permission === null) {
+            return $this->isSupport();
         }
 
         return in_array($permission, $this->supportPermissionSlugs(), true);

@@ -2,14 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Establishment\Models\Establishment;
 use App\Domains\Locality\Models\City;
 use App\Domains\Locality\Models\Neighborhood;
 use App\Domains\Locality\Models\State;
 use App\Domains\Player\Models\Player;
+use App\Domains\Plan\Models\Plan;
 use App\Domains\Screen\Models\Screen;
+use App\Domains\User\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class AddDemoNetworkSeeder extends Seeder
 {
@@ -18,6 +22,10 @@ class AddDemoNetworkSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->createCustomers();
+        $this->createCategories();
+        $this->createPlans();
+
         $state = State::query()->where('code', 'SP')->firstOrFail();
         $agudos = City::query()->firstOrCreate(
             ['state_id' => $state->id, 'name' => 'Agudos'],
@@ -82,6 +90,97 @@ class AddDemoNetworkSeeder extends Seeder
 
         $stockScreen->update(['notes' => 'Equipamento disponível em estoque.']);
         $stockPlayer->update(['notes' => 'Player disponível para uma nova instalação.']);
+    }
+
+    /**
+     * Adiciona anunciantes fictícios para testar os módulos comerciais.
+     */
+    private function createCustomers(): void
+    {
+        $customers = [
+            ['name' => 'Mariana', 'last_name' => 'Souza', 'email' => 'mariana@paladarpastel.demo', 'phone' => '14991010001'],
+            ['name' => 'Carlos', 'last_name' => 'Lima', 'email' => 'carlos@sorveteriacentral.demo', 'phone' => '14991010002'],
+            ['name' => 'Fernanda', 'last_name' => 'Oliveira', 'email' => 'fernanda@lojatech.demo', 'phone' => '14991010003'],
+            ['name' => 'Rafael', 'last_name' => 'Martins', 'email' => 'rafael@academiaenergia.demo', 'phone' => '14991010004'],
+            ['name' => 'Juliana', 'last_name' => 'Almeida', 'email' => 'juliana@modaurbana.demo', 'phone' => '14991010005'],
+        ];
+
+        foreach ($customers as $customer) {
+            User::query()->updateOrCreate(
+                ['email' => $customer['email']],
+                [
+                    ...$customer,
+                    'email_verified_at' => now(),
+                    'password' => Hash::make('12345678'),
+                    'role' => User::ROLE_CUSTOMER,
+                    'status' => User::STATUS_ACTIVE,
+                    'audit_logs_enabled' => true,
+                ],
+            );
+        }
+    }
+
+    /**
+     * Adiciona categorias comuns para classificar campanhas.
+     */
+    private function createCategories(): void
+    {
+        $categories = [
+            ['name' => 'Alimentação', 'slug' => 'alimentacao', 'description' => 'Restaurantes, lanchonetes, cafeterias e alimentação em geral.'],
+            ['name' => 'Eletrônicos', 'slug' => 'eletronicos', 'description' => 'Lojas de tecnologia, informática e eletrônicos.'],
+            ['name' => 'Moda', 'slug' => 'moda', 'description' => 'Vestuário, calçados, acessórios e tendências.'],
+            ['name' => 'Saúde e bem-estar', 'slug' => 'saude-e-bem-estar', 'description' => 'Academias, clínicas, farmácias e serviços de bem-estar.'],
+            ['name' => 'Serviços', 'slug' => 'servicos', 'description' => 'Prestadores de serviços e negócios locais.'],
+        ];
+
+        foreach ($categories as $category) {
+            Category::query()->updateOrCreate(
+                ['slug' => $category['slug']],
+                [
+                    ...$category,
+                    'status' => Category::STATUS_ACTIVE,
+                ],
+            );
+        }
+    }
+
+    /**
+     * Adiciona planos de demonstração para imagens e vídeos.
+     */
+    private function createPlans(): void
+    {
+        $plans = [
+            [
+                'name' => 'Plano Imagem Essencial',
+                'slug' => 'imagem-essencial',
+                'description' => 'Plano mensal para campanhas compostas por imagens.',
+                'screen_limit' => 3,
+                'media_limit' => 5,
+                'billing_cycle' => Plan::BILLING_MONTHLY,
+                'media_type' => Plan::MEDIA_IMAGE,
+                'price' => 149.90,
+            ],
+            [
+                'name' => 'Plano Vídeo Destaque',
+                'slug' => 'video-destaque',
+                'description' => 'Plano mensal para campanhas com vídeos de até 15 segundos.',
+                'screen_limit' => 3,
+                'media_limit' => 3,
+                'billing_cycle' => Plan::BILLING_MONTHLY,
+                'media_type' => Plan::MEDIA_VIDEO,
+                'price' => 249.90,
+            ],
+        ];
+
+        foreach ($plans as $plan) {
+            Plan::query()->updateOrCreate(
+                ['slug' => $plan['slug']],
+                [
+                    ...$plan,
+                    'status' => Plan::STATUS_ACTIVE,
+                ],
+            );
+        }
     }
 
     private function screen(string $code, string $name, string $brand, string $model, int $size, string $status): Screen

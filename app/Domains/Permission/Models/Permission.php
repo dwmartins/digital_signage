@@ -21,119 +21,76 @@ class Permission extends Model
     |--------------------------------------------------------------------------
     */
     public const CUSTOMERS_VIEW = 'customers.view';
-
     public const CUSTOMERS_CREATE = 'customers.create';
-
     public const CUSTOMERS_UPDATE = 'customers.update';
-
     public const CUSTOMERS_DELETE = 'customers.delete';
-
     public const CUSTOMERS_AUDIT_UPDATE = 'customers.audit.update';
 
     public const CATEGORIES_VIEW = 'categories.view';
-
     public const CATEGORIES_CREATE = 'categories.create';
-
     public const CATEGORIES_UPDATE = 'categories.update';
-
     public const CATEGORIES_DELETE = 'categories.delete';
 
     public const LOCALITIES_VIEW = 'localities.view';
-
     public const LOCALITIES_CREATE = 'localities.create';
-
     public const LOCALITIES_UPDATE = 'localities.update';
-
     public const LOCALITIES_DELETE = 'localities.delete';
 
     public const EMAIL_SETTINGS_VIEW = 'email-settings.view';
-
     public const EMAIL_SETTINGS_UPDATE = 'email-settings.update';
 
     public const STORAGE_SETTINGS_VIEW = 'storage-settings.view';
-
     public const STORAGE_SETTINGS_UPDATE = 'storage-settings.update';
 
     public const ESTABLISHMENTS_VIEW = 'establishments.view';
-
     public const ESTABLISHMENTS_CREATE = 'establishments.create';
-
     public const ESTABLISHMENTS_UPDATE = 'establishments.update';
-
     public const ESTABLISHMENTS_DELETE = 'establishments.delete';
 
     public const SCREENS_VIEW = 'screens.view';
-
     public const SCREENS_CREATE = 'screens.create';
-
     public const SCREENS_UPDATE = 'screens.update';
-
     public const SCREENS_DELETE = 'screens.delete';
 
     public const PLAYERS_VIEW = 'players.view';
-
     public const PLAYERS_CREATE = 'players.create';
-
     public const PLAYERS_UPDATE = 'players.update';
-
     public const PLAYERS_DELETE = 'players.delete';
 
     public const DISPLAY_POINTS_VIEW = 'display-points.view';
-
     public const DISPLAY_POINTS_CREATE = 'display-points.create';
-
     public const DISPLAY_POINTS_UPDATE = 'display-points.update';
-
     public const DISPLAY_POINTS_DELETE = 'display-points.delete';
 
     public const MEDIA_VIEW = 'media.view';
-
     public const MEDIA_CREATE = 'media.create';
-
     public const MEDIA_UPDATE = 'media.update';
-
     public const MEDIA_APPROVE = 'media.approve';
-
     public const MEDIA_DELETE = 'media.delete';
 
     public const CAMPAIGNS_VIEW = 'campaigns.view';
-
     public const CAMPAIGNS_CREATE = 'campaigns.create';
-
     public const CAMPAIGNS_UPDATE = 'campaigns.update';
-
     public const CAMPAIGNS_DELETE = 'campaigns.delete';
 
     public const PLANS_VIEW = 'plans.view';
-
     public const PLANS_CREATE = 'plans.create';
-
     public const PLANS_UPDATE = 'plans.update';
-
     public const PLANS_DELETE = 'plans.delete';
 
     public const SUBSCRIPTIONS_VIEW = 'subscriptions.view';
-
     public const SUBSCRIPTIONS_CREATE = 'subscriptions.create';
-
     public const SUBSCRIPTIONS_UPDATE = 'subscriptions.update';
-
     public const SUBSCRIPTIONS_APPROVE = 'subscriptions.approve';
-
     public const SUBSCRIPTIONS_RENEW = 'subscriptions.renew';
-
     public const SUBSCRIPTIONS_CANCEL = 'subscriptions.cancel';
 
     public const TRANSACTIONS_VIEW = 'transactions.view';
 
     public const SUPPORT_USERS_VIEW = 'support-users.view';
-
     public const SUPPORT_USERS_CREATE = 'support-users.create';
-
     public const SUPPORT_USERS_UPDATE = 'support-users.update';
-
     public const SUPPORT_USERS_PERMISSIONS_UPDATE = 'support-users.permissions.update';
-
     public const SUPPORT_USERS_DELETE = 'support-users.delete';
 
     /**
@@ -203,6 +160,7 @@ class Permission extends Model
                 'group_label' => 'Clientes anunciantes',
                 'description' => 'Permite excluir usuários anunciantes da plataforma.',
             ],
+
             self::CATEGORIES_VIEW => [
                 'name' => 'Visualizar categorias',
                 'group' => 'categories',
@@ -227,6 +185,7 @@ class Permission extends Model
                 'group_label' => 'Categorias',
                 'description' => 'Permite excluir categorias que não estejam em uso.',
             ],
+
             self::LOCALITIES_VIEW => [
                 'name' => 'Visualizar localidades',
                 'group' => 'localities',
@@ -251,6 +210,7 @@ class Permission extends Model
                 'group_label' => 'Localidades',
                 'description' => 'Permite excluir localidades sem vínculos.',
             ],
+
             self::EMAIL_SETTINGS_VIEW => [
                 'name' => 'Visualizar configuração de e-mail',
                 'group' => 'settings',
@@ -263,6 +223,7 @@ class Permission extends Model
                 'group_label' => 'Configurações',
                 'description' => 'Permite alterar e ativar as configurações de envio de e-mails.',
             ],
+
             self::STORAGE_SETTINGS_VIEW => [
                 'name' => 'Visualizar configuração de armazenamento',
                 'group' => 'settings',
@@ -275,6 +236,7 @@ class Permission extends Model
                 'group_label' => 'Configurações',
                 'description' => 'Permite configurar armazenamento local, Cloudflare R2 ou Amazon S3.',
             ],
+
             self::ESTABLISHMENTS_VIEW => [
                 'name' => 'Visualizar estabelecimentos',
                 'group' => 'establishments',
@@ -299,6 +261,7 @@ class Permission extends Model
                 'group_label' => 'Estabelecimentos',
                 'description' => 'Permite excluir estabelecimentos parceiros.',
             ],
+
             self::SCREENS_VIEW => [
                 'name' => 'Visualizar telas',
                 'group' => 'screens',
@@ -323,34 +286,182 @@ class Permission extends Model
                 'group_label' => 'Telas',
                 'description' => 'Permite excluir telas da plataforma.',
             ],
-            self::PLAYERS_VIEW => ['name' => 'Visualizar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite consultar os computadores players.'],
-            self::PLAYERS_CREATE => ['name' => 'Criar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite cadastrar computadores players.'],
-            self::PLAYERS_UPDATE => ['name' => 'Editar players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite alterar players e suas configurações.'],
-            self::PLAYERS_DELETE => ['name' => 'Excluir players (PC)', 'group' => 'players', 'group_label' => 'Players (PC)', 'description' => 'Permite excluir computadores players.'],
-            self::DISPLAY_POINTS_VIEW => ['name' => 'Visualizar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite consultar os pontos de exibição.'],
-            self::DISPLAY_POINTS_CREATE => ['name' => 'Criar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite criar vínculos entre locais, telas e players.'],
-            self::DISPLAY_POINTS_UPDATE => ['name' => 'Editar pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite alterar os vínculos dos pontos de exibição.'],
-            self::DISPLAY_POINTS_DELETE => ['name' => 'Excluir pontos de exibição', 'group' => 'display-points', 'group_label' => 'Pontos de exibição', 'description' => 'Permite excluir pontos de exibição.'],
-            self::MEDIA_VIEW => ['name' => 'Visualizar biblioteca de mídias', 'group' => 'media', 'group_label' => 'Biblioteca de mídias', 'description' => 'Permite consultar imagens e vídeos dos anunciantes.'],
-            self::MEDIA_CREATE => ['name' => 'Adicionar mídias', 'group' => 'media', 'group_label' => 'Biblioteca de mídias', 'description' => 'Permite enviar imagens e vídeos para os anunciantes.'],
-            self::MEDIA_UPDATE => ['name' => 'Editar mídias', 'group' => 'media', 'group_label' => 'Biblioteca de mídias', 'description' => 'Permite alterar dados e substituir arquivos das mídias.'],
-            self::MEDIA_APPROVE => ['name' => 'Analisar mídias', 'group' => 'media', 'group_label' => 'Biblioteca de mídias', 'description' => 'Permite aprovar, rejeitar ou arquivar mídias após análise interna.'],
-            self::MEDIA_DELETE => ['name' => 'Excluir mídias', 'group' => 'media', 'group_label' => 'Biblioteca de mídias', 'description' => 'Permite excluir mídias e seus arquivos.'],
-            self::CAMPAIGNS_VIEW => ['name' => 'Visualizar campanhas', 'group' => 'campaigns', 'group_label' => 'Campanhas', 'description' => 'Permite consultar campanhas e suas contratações.'],
-            self::CAMPAIGNS_CREATE => ['name' => 'Criar campanhas', 'group' => 'campaigns', 'group_label' => 'Campanhas', 'description' => 'Permite criar campanhas com mídias, categorias e plano.'],
-            self::CAMPAIGNS_UPDATE => ['name' => 'Editar campanhas', 'group' => 'campaigns', 'group_label' => 'Campanhas', 'description' => 'Permite alterar dados e vínculos das campanhas.'],
-            self::CAMPAIGNS_DELETE => ['name' => 'Excluir campanhas', 'group' => 'campaigns', 'group_label' => 'Campanhas', 'description' => 'Permite excluir campanhas sem histórico financeiro.'],
-            self::PLANS_VIEW => ['name' => 'Visualizar planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite consultar os planos comerciais.'],
-            self::PLANS_CREATE => ['name' => 'Criar planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite cadastrar planos comerciais.'],
-            self::PLANS_UPDATE => ['name' => 'Editar planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite alterar planos comerciais.'],
-            self::PLANS_DELETE => ['name' => 'Excluir planos', 'group' => 'plans', 'group_label' => 'Planos', 'description' => 'Permite excluir planos sem assinaturas.'],
-            self::SUBSCRIPTIONS_VIEW => ['name' => 'Visualizar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite consultar contratações de campanhas.'],
-            self::SUBSCRIPTIONS_CREATE => ['name' => 'Criar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite contratar um plano para um anunciante.'],
-            self::SUBSCRIPTIONS_UPDATE => ['name' => 'Editar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite editar contratações ainda não ativas.'],
-            self::SUBSCRIPTIONS_APPROVE => ['name' => 'Aprovar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite ativar assinaturas e gerar a cobrança inicial.'],
-            self::SUBSCRIPTIONS_RENEW => ['name' => 'Renovar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite renovar a vigência e registrar uma nova cobrança para a assinatura.'],
-            self::SUBSCRIPTIONS_CANCEL => ['name' => 'Cancelar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite cancelar assinaturas de campanhas.'],
-            self::TRANSACTIONS_VIEW => ['name' => 'Visualizar transações', 'group' => 'transactions', 'group_label' => 'Transações', 'description' => 'Permite consultar o histórico financeiro das campanhas.'],
+
+            self::PLAYERS_VIEW => [
+                'name' => 'Visualizar players (PC)',
+                'group' => 'players',
+                'group_label' => 'Players (PC)',
+                'description' => 'Permite consultar os computadores players.',
+            ],
+            self::PLAYERS_CREATE => [
+                'name' => 'Criar players (PC)',
+                'group' => 'players',
+                'group_label' => 'Players (PC)',
+                'description' => 'Permite cadastrar computadores players.',
+            ],
+            self::PLAYERS_UPDATE => [
+                'name' => 'Editar players (PC)',
+                'group' => 'players',
+                'group_label' => 'Players (PC)',
+                'description' => 'Permite alterar players e suas configurações.',
+            ],
+            self::PLAYERS_DELETE => [
+                'name' => 'Excluir players (PC)',
+                'group' => 'players',
+                'group_label' => 'Players (PC)',
+                'description' => 'Permite excluir computadores players.',
+            ],
+
+            self::DISPLAY_POINTS_VIEW => [
+                'name' => 'Visualizar pontos de exibição',
+                'group' => 'display-points',
+                'group_label' => 'Pontos de exibição',
+                'description' => 'Permite consultar os pontos de exibição.',
+            ],
+            self::DISPLAY_POINTS_CREATE => [
+                'name' => 'Criar pontos de exibição',
+                'group' => 'display-points',
+                'group_label' => 'Pontos de exibição',
+                'description' => 'Permite criar vínculos entre locais, telas e players.',
+            ],
+            self::DISPLAY_POINTS_UPDATE => [
+                'name' => 'Editar pontos de exibição',
+                'group' => 'display-points',
+                'group_label' => 'Pontos de exibição',
+                'description' => 'Permite alterar os vínculos dos pontos de exibição.',
+            ],
+            self::DISPLAY_POINTS_DELETE => [
+                'name' => 'Excluir pontos de exibição',
+                'group' => 'display-points',
+                'group_label' => 'Pontos de exibição',
+                'description' => 'Permite excluir pontos de exibição.',
+            ],
+
+            self::MEDIA_VIEW => [
+                'name' => 'Visualizar biblioteca de mídias',
+                'group' => 'media',
+                'group_label' => 'Biblioteca de mídias',
+                'description' => 'Permite consultar imagens e vídeos dos anunciantes.',
+            ],
+            self::MEDIA_CREATE => [
+                'name' => 'Adicionar mídias',
+                'group' => 'media',
+                'group_label' => 'Biblioteca de mídias',
+                'description' => 'Permite enviar imagens e vídeos para os anunciantes.',
+            ],
+            self::MEDIA_UPDATE => [
+                'name' => 'Editar mídias',
+                'group' => 'media',
+                'group_label' => 'Biblioteca de mídias',
+                'description' => 'Permite alterar dados e substituir arquivos das mídias.',
+            ],
+            self::MEDIA_APPROVE => [
+                'name' => 'Analisar mídias',
+                'group' => 'media',
+                'group_label' => 'Biblioteca de mídias',
+                'description' => 'Permite aprovar, rejeitar ou arquivar mídias após análise interna.',
+            ],
+            self::MEDIA_DELETE => [
+                'name' => 'Excluir mídias',
+                'group' => 'media',
+                'group_label' => 'Biblioteca de mídias',
+                'description' => 'Permite excluir mídias e seus arquivos.',
+            ],
+
+            self::CAMPAIGNS_VIEW => [
+                'name' => 'Visualizar campanhas',
+                'group' => 'campaigns',
+                'group_label' => 'Campanhas',
+                'description' => 'Permite consultar campanhas e suas contratações.',
+            ],
+            self::CAMPAIGNS_CREATE => [
+                'name' => 'Criar campanhas',
+                'group' => 'campaigns',
+                'group_label' => 'Campanhas',
+                'description' => 'Permite criar campanhas com mídias, categorias e plano.',
+            ],
+            self::CAMPAIGNS_UPDATE => [
+                'name' => 'Editar campanhas',
+                'group' => 'campaigns',
+                'group_label' => 'Campanhas',
+                'description' => 'Permite alterar dados e vínculos das campanhas.',
+            ],
+            self::CAMPAIGNS_DELETE => [
+                'name' => 'Excluir campanhas',
+                'group' => 'campaigns',
+                'group_label' => 'Campanhas',
+                'description' => 'Permite excluir campanhas sem histórico financeiro.',
+            ],
+
+            self::PLANS_VIEW => [
+                'name' => 'Visualizar planos',
+                'group' => 'plans',
+                'group_label' => 'Planos',
+                'description' => 'Permite consultar os planos comerciais.',
+            ],
+            self::PLANS_CREATE => [
+                'name' => 'Criar planos',
+                'group' => 'plans',
+                'group_label' => 'Planos',
+                'description' => 'Permite cadastrar planos comerciais.',
+            ],
+            self::PLANS_UPDATE => [
+                'name' => 'Editar planos',
+                'group' => 'plans',
+                'group_label' => 'Planos',
+                'description' => 'Permite alterar planos comerciais.',
+            ],
+            self::PLANS_DELETE => [
+                'name' => 'Excluir planos',
+                'group' => 'plans',
+                'group_label' => 'Planos',
+                'description' => 'Permite excluir planos sem assinaturas.',
+            ],
+
+            self::SUBSCRIPTIONS_VIEW => [
+                'name' => 'Visualizar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite consultar contratações de campanhas.',
+            ],
+            self::SUBSCRIPTIONS_CREATE => [
+                'name' => 'Criar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite contratar um plano para um anunciante.',
+            ],
+            self::SUBSCRIPTIONS_UPDATE => [
+                'name' => 'Editar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite editar contratações ainda não ativas.',
+            ],
+            self::SUBSCRIPTIONS_APPROVE => [
+                'name' => 'Aprovar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite ativar assinaturas e gerar a cobrança inicial.',
+            ],
+            self::SUBSCRIPTIONS_RENEW => [
+                'name' => 'Renovar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite renovar a vigência e registrar uma nova cobrança para a assinatura.',
+            ],
+            self::SUBSCRIPTIONS_CANCEL => [
+                'name' => 'Cancelar assinaturas',
+                'group' => 'subscriptions',
+                'group_label' => 'Assinaturas',
+                'description' => 'Permite cancelar assinaturas de campanhas.',
+            ],
+
+            self::TRANSACTIONS_VIEW => [
+                'name' => 'Visualizar transações',
+                'group' => 'transactions',
+                'group_label' => 'Transações',
+                'description' => 'Permite consultar o histórico financeiro das campanhas.',
+            ],
+
             self::SUPPORT_USERS_VIEW => [
                 'name' => 'Visualizar usuários suporte',
                 'group' => 'users-support',

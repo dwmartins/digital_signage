@@ -20,8 +20,6 @@ const summary = computed(() => dashboard.value?.summary ?? {});
 const metricCards = computed(() => [
     { label: "Campanhas ativas", value: summary.value.active_campaigns ?? 0, icon: "pi pi-megaphone", tone: "primary", route: "platform.campaigns", permission: "campaigns.view" },
     { label: "Assinaturas ativas", value: summary.value.active_subscriptions ?? 0, icon: "pi pi-calendar-clock", tone: "success", route: "platform.subscriptions", permission: "subscriptions.view" },
-    { label: "Telas em estoque", value: summary.value.screens_in_stock ?? 0, icon: "pi pi-desktop", tone: "info", route: "platform.screens", permission: "screens.view", query: { status: "stock" } },
-    { label: "Players (PC) em estoque", value: summary.value.players_in_stock ?? 0, icon: "pi pi-microchip", tone: "warning", route: "platform.players", permission: "players.view", query: { status: "stock" } },
     { label: "Pontos de exibição", value: summary.value.display_points ?? 0, icon: "pi pi-map-marker", tone: "primary", route: "platform.display-points", permission: "display-points.view" },
     { label: "Pontos que exigem atenção", value: summary.value.attention_points ?? 0, icon: "pi pi-exclamation-triangle", tone: "danger", route: "platform.display-points", permission: "display-points.view" },
     { label: "Mídias aguardando análise", value: summary.value.pending_media ?? 0, icon: "pi pi-images", tone: "warning", route: "platform.media", permission: "media.view", query: { approval_status: "pending_approval" } },
@@ -156,7 +154,7 @@ onMounted(() => fetchDashboard());
 
         <template v-if="loading">
             <div class="row g-3 mb-4">
-                <div v-for="index in 8" :key="index" class="col-12 col-sm-6 col-xl-3">
+                <div v-for="index in 7" :key="index" class="col-12 col-sm-6 col-xl-3">
                     <Card class="h-100 border-0 shadow-sm">
                         <template #content>
                             <div class="d-flex justify-content-between gap-3">
@@ -194,6 +192,37 @@ onMounted(() => fetchDashboard());
                                 </div>
                                 <span class="metric-icon revenue-icon flex-shrink-0">
                                     <i class="pi pi-money-bill"></i>
+                                </span>
+                            </div>
+                        </template>
+                    </Card>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <Card
+                        class="pending-subscription-card h-100 border-0 overflow-hidden"
+                        :class="{
+                            'has-pending': (summary.pending_subscriptions ?? 0) > 0,
+                            'metric-clickable': canAccess('subscriptions.view'),
+                        }"
+                        @click="canAccess('subscriptions.view') && router.push({
+                            name: 'platform.subscriptions',
+                            query: { status: 'pending' },
+                        })"
+                    >
+                        <template #content>
+                            <div class="d-flex justify-content-between align-items-start gap-3 position-relative">
+                                <div class="min-w-0">
+                                    <span class="d-block small mb-2">Assinaturas pendentes</span>
+                                    <strong class="d-block fs-3">{{ summary.pending_subscriptions ?? 0 }}</strong>
+                                    <small class="d-block mt-2">
+                                        {{ (summary.pending_subscriptions ?? 0) > 0
+                                            ? "Novos clientes aguardando análise"
+                                            : "Nenhuma contratação aguardando" }}
+                                    </small>
+                                </div>
+                                <span class="pending-subscription-icon metric-icon flex-shrink-0">
+                                    <i :class="(summary.pending_subscriptions ?? 0) > 0 ? 'pi pi-bell' : 'pi pi-check'"></i>
                                 </span>
                             </div>
                         </template>
@@ -440,6 +469,39 @@ onMounted(() => fetchDashboard());
 .revenue-icon {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.16);
+}
+
+.pending-subscription-card {
+    color: var(--p-text-color);
+    background: color-mix(in srgb, var(--p-orange-500) 8%, var(--p-content-background));
+    box-shadow: 0 0.5rem 1.25rem color-mix(in srgb, var(--p-orange-500) 10%, transparent);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.pending-subscription-card small {
+    color: var(--p-text-muted-color);
+}
+
+.pending-subscription-card.has-pending {
+    color: #ffffff;
+    background: linear-gradient(135deg, #c2410c 0%, #f59e0b 100%);
+    box-shadow: 0 0.75rem 1.75rem rgba(194, 65, 12, 0.24);
+}
+
+.pending-subscription-card.has-pending small {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.pending-subscription-icon {
+    color: #c2410c;
+    background: color-mix(in srgb, var(--p-orange-500) 18%, transparent);
+}
+
+.has-pending .pending-subscription-icon {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .metric-icon,

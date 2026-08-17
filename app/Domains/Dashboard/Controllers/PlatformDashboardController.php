@@ -8,7 +8,6 @@ use App\Domains\Campaign\Models\CampaignSubscription;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Player\Models\Player;
-use App\Domains\Screen\Models\Screen;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 
@@ -74,8 +73,7 @@ class PlatformDashboardController
                 'active_campaigns' => Campaign::query()->where('status', Campaign::STATUS_ACTIVE)->count(),
                 'monthly_revenue' => $monthlyRevenue,
                 'active_subscriptions' => CampaignSubscription::query()->where('status', CampaignSubscription::STATUS_ACTIVE)->count(),
-                'screens_in_stock' => Screen::query()->where('status', Screen::STATUS_STOCK)->count(),
-                'players_in_stock' => Player::query()->where('status', Player::STATUS_STOCK)->count(),
+                'pending_subscriptions' => CampaignSubscription::query()->where('status', CampaignSubscription::STATUS_PENDING)->count(),
                 'display_points' => $totalPoints,
                 'attention_points' => $displayPoints->filter(fn (DisplayPoint $point) => $this->needsAttention($point, $connectionThreshold))->count(),
                 'pending_media' => MediaAsset::query()->where('approval_status', MediaAsset::APPROVAL_PENDING)->count(),

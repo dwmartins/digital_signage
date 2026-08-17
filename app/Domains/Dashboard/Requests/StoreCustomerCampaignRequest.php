@@ -39,11 +39,29 @@ class StoreCustomerCampaignRequest extends FormRequest
             'files.*' => ['required', 'file', 'max:102400', 'mimes:jpg,jpeg,png,webp,mp4,webm,mov'],
             'media_order' => ['nullable', 'array'],
             'media_order.*' => ['string', 'distinct', 'regex:/^(library:[0-9]+|file:[0-9]+)$/'],
+            'media_assignments' => ['required', 'array'],
+            'media_assignments.*' => ['required', 'array', 'min:1'],
+            'media_assignments.*.*' => ['integer'],
+            'display_orders' => ['nullable', 'array'],
+            'display_orders.*' => ['array'],
+            'display_orders.*.*' => ['string', 'regex:/^(library:[0-9]+|file:[0-9]+)$/'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        $mediaAssignments = $this->input('media_assignments', []);
+
+        if (is_string($mediaAssignments)) {
+            $mediaAssignments = json_decode($mediaAssignments, true) ?? [];
+        }
+
+        $displayOrders = $this->input('display_orders', []);
+
+        if (is_string($displayOrders)) {
+            $displayOrders = json_decode($displayOrders, true) ?? [];
+        }
+
         $this->merge([
             'name' => trim((string) $this->input('name')),
             'description' => $this->filled('description')
@@ -53,6 +71,8 @@ class StoreCustomerCampaignRequest extends FormRequest
             'display_point_ids' => $this->input('display_point_ids', []),
             'media_asset_ids' => $this->input('media_asset_ids', []),
             'media_order' => $this->input('media_order', []),
+            'media_assignments' => $mediaAssignments,
+            'display_orders' => $displayOrders,
         ]);
     }
 }

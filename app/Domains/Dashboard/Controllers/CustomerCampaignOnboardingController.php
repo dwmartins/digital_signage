@@ -153,11 +153,41 @@ class CustomerCampaignOnboardingController
             ->where('status', DisplayPoint::STATUS_ACTIVE)
             ->whereHas('establishment', fn ($query) => $query
                 ->where('status', Establishment::STATUS_ACTIVE))
-            ->count();
+            ->get(['id', 'orientation']);
 
-        if ($availableDisplayPoints !== count($data['display_point_ids'])) {
+        if ($availableDisplayPoints->count() !== count($data['display_point_ids'])) {
             throw ValidationException::withMessages([
                 'display_point_ids' => 'Um ou mais pontos de exibição não estão disponíveis.',
+            ]);
+        }
+
+        $selectedPointIds = collect($data['display_point_ids'])->map(fn ($id) => (int) $id);
+        $assignedPointIds = collect($data['media_assignments'] ?? [])->flatten()->map(fn ($id) => (int) $id);
+
+        if ($assignedPointIds->diff($selectedPointIds)->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'media_assignments' => 'Uma mídia foi vinculada a um ponto de exibição que não está selecionado.',
+            ]);
+        }
+
+        if ($selectedPointIds->diff($assignedPointIds)->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'media_assignments' => 'Todos os pontos selecionados devem possuir ao menos uma mídia.',
+            ]);
+        }
+
+        $pointOrientations = $availableDisplayPoints->pluck('orientation', 'id');
+        $hasMixedOrientation = collect($data['media_assignments'] ?? [])->contains(
+            fn (array $pointIds) => collect($pointIds)
+                ->map(fn ($pointId) => $pointOrientations->get((int) $pointId))
+                ->filter()
+                ->unique()
+                ->count() > 1,
+        );
+
+        if ($hasMixedOrientation) {
+            throw ValidationException::withMessages([
+                'media_assignments' => 'Cada mídia deve ser vinculada somente a pontos com a mesma orientação.',
             ]);
         }
 
@@ -211,16 +241,57 @@ class CustomerCampaignOnboardingController
                     ]);
                 });
 
+                $uploadedKeys = collect($data['media_order'] ?? [])
+                    ->filter(fn (string $key) => str_starts_with($key, 'file:'))
+                    ->values();
+                $uploadedMediaMap = $uploadedMedia
+                    ->values()
+                    ->mapWithKeys(fn (MediaAsset $media, int $index) => [
+                        $uploadedKeys->get($index, "file:{$index}") => $media,
+                    ]);
                 $mediaMap = $libraryMedia
                     ->mapWithKeys(fn (MediaAsset $media) => ["library:{$media->id}" => $media])
-                    ->merge($uploadedMedia->mapWithKeys(
-                        fn (MediaAsset $media, int $index) => ["file:{$index}" => $media],
-                    ));
+                    ->merge($uploadedMediaMap);
                 $order = collect($data['media_order'] ?? [])
                     ->filter(fn (string $key) => $mediaMap->has($key))
                     ->concat($mediaMap->keys())
                     ->unique()
                     ->values();
+
+                $assignments = collect($data['media_assignments'] ?? [])
+                    ->only($mediaMap->keys()->all());
+                $assignmentValues = collect($data['media_assignments'] ?? [])->values();
+                $assignments = $mediaMap->keys()->mapWithKeys(function (string $key, int $index) use ($assignments, $assignmentValues): array {
+                    $pointIds = $assignments->get($key, $assignmentValues->get($index, []));
+
+                    if (empty($pointIds)) {
+                        throw ValidationException::withMessages([
+                            'media_assignments' => 'Selecione ao menos um ponto de exibição para cada mídia.',
+                        ]);
+                    }
+
+                    return [
+                        $key => collect($pointIds)
+                            ->map(fn ($pointId) => (int) $pointId)
+                            ->unique()
+                            ->values()
+                            ->all(),
+                    ];
+                });
+                $displayOrders = collect($data['display_point_ids'])->mapWithKeys(function ($displayPointId) use ($data, $assignments, $mediaMap): array {
+                    $displayPointId = (int) $displayPointId;
+                    $availableKeys = $mediaMap->keys()
+                        ->filter(fn (string $key) => collect($assignments->get($key))->contains($displayPointId))
+                        ->values();
+                    $requestedOrder = collect($data['display_orders'][$displayPointId] ?? [])
+                        ->filter(fn (string $key) => $availableKeys->contains($key));
+                    $normalizedOrder = $requestedOrder
+                        ->concat($availableKeys)
+                        ->unique()
+                        ->values();
+
+                    return [$displayPointId => $normalizedOrder];
+                });
 
                 $campaign->mediaAssets()->sync($order->mapWithKeys(
                     fn (string $key, int $position) => [
@@ -228,12 +299,13 @@ class CustomerCampaignOnboardingController
                     ],
                 ));
 
-                $mediaMap->unique('id')->each(function (MediaAsset $media) use ($campaign, $data): void {
-                    collect($data['display_point_ids'])->each(
-                        fn (int $displayPointId) => MediaAssetDistribution::query()->create([
+                $displayOrders->each(function ($mediaKeys, int $displayPointId) use ($campaign, $mediaMap): void {
+                    $mediaKeys->each(
+                        fn (string $key, int $position) => MediaAssetDistribution::query()->create([
                             'campaign_id' => $campaign->id,
-                            'media_asset_id' => $media->id,
+                            'media_asset_id' => $mediaMap->get($key)->id,
                             'display_point_id' => $displayPointId,
+                            'position' => $position + 1,
                             'status' => MediaAssetDistribution::STATUS_PENDING,
                         ]),
                     );

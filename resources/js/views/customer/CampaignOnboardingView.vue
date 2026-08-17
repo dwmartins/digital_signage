@@ -2,6 +2,7 @@
 import CampaignStepContent from "@/components/customer/onboarding/CampaignStepContent.vue";
 import DisplayPointStepContent from "@/components/customer/onboarding/DisplayPointStepContent.vue";
 import MediaStepContent from "@/components/customer/onboarding/MediaStepContent.vue";
+import OrderStepContent from "@/components/customer/onboarding/OrderStepContent.vue";
 import PlanStepContent from "@/components/customer/onboarding/PlanStepContent.vue";
 import Breadcrumb from "@/components/shared/Breadcrumb.vue";
 import Spinner from "@/components/shared/Spinner.vue";
@@ -30,6 +31,8 @@ const form = reactive({
     playback_mode: "sequential",
     files: [],
     media_order: [],
+    media_assignments: {},
+    display_orders: {},
 });
 
 const selectedPlan = computed(() => plans.value.find((plan) => plan.id === form.plan_id) ?? null);
@@ -59,6 +62,8 @@ const selectPlan = (planId) => {
         form.playback_mode = "sequential";
         form.display_point_ids = [];
         form.media_asset_ids = [];
+        form.media_assignments = {};
+        form.display_orders = {};
     }
 
     form.plan_id = planId;
@@ -85,6 +90,14 @@ const toggleDisplayPoint = (pointId) => {
 
     if (index >= 0) {
         form.display_point_ids.splice(index, 1);
+        Object.keys(form.media_assignments).forEach((key) => {
+            form.media_assignments[key] = form.media_assignments[key].filter((id) => id !== pointId);
+
+            if (!form.media_assignments[key].length) {
+                form.media_assignments[key] = [...form.display_point_ids];
+            }
+        });
+        syncDisplayOrders();
         return;
     }
 
@@ -93,11 +106,24 @@ const toggleDisplayPoint = (pointId) => {
     }
 
     form.display_point_ids.push(pointId);
+    Object.keys(form.media_assignments).forEach((key) => {
+        form.media_assignments[key].push(pointId);
+    });
+    syncDisplayOrders();
 };
 
 const nextFromDisplayPoints = () => {
     if (!form.display_point_ids.length) {
         return showAlert("warning", "Selecione ao menos um ponto de exibição para continuar.");
+    }
+
+    const orientationCount = new Set(selectedOrientations.value).size;
+
+    if (orientationCount > selectedPlan.value.media_limit) {
+        return showAlert(
+            "warning",
+            "O plano não permite mídias suficientes para atender pontos horizontais e verticais. Selecione pontos com a mesma orientação.",
+        );
     }
 
     activeStep.value = "4";
@@ -159,7 +185,22 @@ const addFiles = async (newFiles) => {
 };
 
 const removeFile = (index) => {
+    const assignments = {};
+
+    Object.entries(form.media_assignments).forEach(([key, pointIds]) => {
+        if (!key.startsWith("file:")) {
+            assignments[key] = pointIds;
+            return;
+        }
+
+        const fileIndex = Number(key.replace("file:", ""));
+
+        if (fileIndex < index) assignments[key] = pointIds;
+        if (fileIndex > index) assignments[`file:${fileIndex - 1}`] = pointIds;
+    });
+
     form.files.splice(index, 1);
+    form.media_assignments = assignments;
     form.media_order = form.media_order.filter((key) => !key.startsWith("file:"));
     syncOrder();
 };
@@ -169,6 +210,7 @@ const toggleLibraryMedia = (mediaId) => {
 
     if (index >= 0) {
         form.media_asset_ids.splice(index, 1);
+        delete form.media_assignments[`library:${mediaId}`];
         form.media_order = form.media_order.filter((key) => key !== `library:${mediaId}`);
         return syncOrder();
     }
@@ -181,11 +223,6 @@ const toggleLibraryMedia = (mediaId) => {
     syncOrder();
 };
 
-const reorderMedia = (from, to) => {
-    const [key] = form.media_order.splice(from, 1);
-    form.media_order.splice(to, 0, key);
-};
-
 const syncOrder = () => {
     const validKeys = [
         ...form.media_asset_ids.map((id) => `library:${id}`),
@@ -196,6 +233,56 @@ const syncOrder = () => {
         ...form.media_order.filter((key) => validKeys.includes(key)),
         ...validKeys.filter((key) => !form.media_order.includes(key)),
     ];
+
+    Object.keys(form.media_assignments)
+        .filter((key) => !validKeys.includes(key))
+        .forEach((key) => delete form.media_assignments[key]);
+
+    validKeys.forEach((key) => {
+        if (!form.media_assignments[key]) {
+            form.media_assignments[key] = [];
+        }
+    });
+
+    syncDisplayOrders();
+};
+
+const saveMediaAssignments = (mediaKey, pointIds) => {
+    form.media_assignments[mediaKey] = [...pointIds];
+    syncDisplayOrders();
+};
+
+const syncDisplayOrders = () => {
+    Object.keys(form.display_orders)
+        .filter((pointId) => !form.display_point_ids.includes(Number(pointId)))
+        .forEach((pointId) => delete form.display_orders[pointId]);
+
+    form.display_point_ids.forEach((pointId) => {
+        const validKeys = form.media_order.filter((key) => form.media_assignments[key]?.includes(pointId));
+        const currentOrder = form.display_orders[pointId] ?? [];
+
+        form.display_orders[pointId] = [
+            ...currentOrder.filter((key) => validKeys.includes(key)),
+            ...validKeys.filter((key) => !currentOrder.includes(key)),
+        ];
+    });
+};
+
+const reorderDisplayMedia = (pointId, from, to) => {
+    const order = form.display_orders[pointId];
+    const [mediaKey] = order.splice(from, 1);
+
+    order.splice(to, 0, mediaKey);
+};
+
+const continueFromMedia = () => {
+    syncOrder();
+
+    if (form.media_order.some((key) => !form.media_assignments[key]?.length)) {
+        return showAlert("warning", "Selecione ao menos um ponto de exibição para cada mídia.");
+    }
+
+    activeStep.value = "5";
 };
 
 const submit = async () => {
@@ -203,9 +290,20 @@ const submit = async () => {
         return showAlert("warning", "Adicione ao menos uma mídia para finalizar.");
     }
 
+    syncOrder();
+
+    const pointsWithMedia = new Set(Object.values(form.media_assignments).flat());
+
+    if (form.media_order.some((key) => !form.media_assignments[key]?.length)) {
+        return showAlert("warning", "Selecione ao menos um ponto de exibição para cada mídia.");
+    }
+
+    if (form.display_point_ids.some((id) => !pointsWithMedia.has(id))) {
+        return showAlert("warning", "Defina ao menos uma mídia para cada ponto de exibição selecionado.");
+    }
+
     try {
         saving.value = true;
-        syncOrder();
         const response = await customerCampaignService.create(form);
         completed.value = true;
         showAlert("success", response.message);
@@ -276,7 +374,8 @@ onMounted(() => {
                         <Step value="1">Escolha do plano</Step>
                         <Step value="2">Dados da campanha</Step>
                         <Step value="3">Pontos de exibição</Step>
-                        <Step value="4">Mídias e ordem</Step>
+                        <Step value="4">Mídias e locais</Step>
+                        <Step value="5">Ordem por local</Step>
                     </StepList>
 
                     <StepPanels>
@@ -318,15 +417,33 @@ onMounted(() => {
                                 v-if="selectedPlan"
                                 :form="form"
                                 :plan="selectedPlan"
-                                :orientations="selectedOrientations"
+                                :displayPoints="displayPoints.filter((point) => form.display_point_ids.includes(point.id))"
                                 :libraryMedia="libraryMedia"
                                 @add-files="addFiles"
                                 @remove-file="removeFile"
                                 @toggle-library="toggleLibraryMedia"
-                                @reorder="reorderMedia"
+                                @save-assignments="saveMediaAssignments"
                             />
                             <div class="step-actions d-flex justify-content-between mt-4 pt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" severity="secondary" outlined @click="activeStep = '3'" />
+                                <Button
+                                    label="Definir ordem"
+                                    icon="pi pi-arrow-right"
+                                    iconPos="right"
+                                    @click="continueFromMedia"
+                                />
+                            </div>
+                        </StepPanel>
+
+                        <StepPanel value="5">
+                            <OrderStepContent
+                                :form="form"
+                                :displayPoints="displayPoints.filter((point) => form.display_point_ids.includes(point.id))"
+                                :libraryMedia="libraryMedia"
+                                @reorder="reorderDisplayMedia"
+                            />
+                            <div class="step-actions d-flex justify-content-between mt-4 pt-4">
+                                <Button label="Voltar" icon="pi pi-arrow-left" severity="secondary" outlined @click="activeStep = '4'" />
                                 <Button label="Enviar campanha" icon="pi pi-check" :loading="saving" @click="submit" />
                             </div>
                         </StepPanel>

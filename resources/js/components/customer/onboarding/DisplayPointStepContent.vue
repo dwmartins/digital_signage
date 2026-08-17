@@ -53,6 +53,20 @@ const location = (point) => [
     point.establishment?.city?.name,
     point.establishment?.city?.state?.code,
 ].filter(Boolean).join(" · ");
+
+const displayFormat = (orientation) => orientation === "portrait"
+    ? {
+        label: "Vertical",
+        icon: "pi pi-mobile",
+        ratio: "9:16",
+        resolution: "1080 × 1920 px",
+    }
+    : {
+        label: "Horizontal",
+        icon: "pi pi-desktop",
+        ratio: "16:9",
+        resolution: "1920 × 1080 px",
+    };
 </script>
 
 <template>
@@ -111,12 +125,22 @@ const location = (point) => [
                         <span class="d-block fw-semibold mt-1">{{ point.name }}</span>
                         <small v-if="point.location" class="d-block text-muted mt-1">{{ point.location }}</small>
                         <small class="d-block text-muted mt-1">{{ location(point) }}</small>
-                        <Tag
-                            :value="point.orientation === 'portrait' ? 'Vertical' : 'Horizontal'"
-                            :icon="point.orientation === 'portrait' ? 'pi pi-mobile' : 'pi pi-desktop'"
-                            severity="secondary"
-                            class="mt-2"
-                        />
+                        <span class="d-flex flex-wrap gap-2 mt-3">
+                            <Tag
+                                :value="displayFormat(point.orientation).label"
+                                :icon="displayFormat(point.orientation).icon"
+                                severity="secondary"
+                            />
+                            <Tag
+                                :value="`Proporção ${displayFormat(point.orientation).ratio}`"
+                                icon="pi pi-expand"
+                                severity="secondary"
+                            />
+                        </span>
+                        <small class="resolution-hint d-flex align-items-center gap-2 mt-2">
+                            <i class="pi pi-image"></i>
+                            Recomendado: {{ displayFormat(point.orientation).resolution }}
+                        </small>
                     </span>
                 </button>
             </div>
@@ -176,6 +200,11 @@ const location = (point) => [
     height: 2.75rem;
     color: var(--p-primary-color);
     background: var(--p-primary-100);
+}
+
+.resolution-hint {
+    color: var(--p-primary-color);
+    font-weight: 600;
 }
 
 .min-w-0 {

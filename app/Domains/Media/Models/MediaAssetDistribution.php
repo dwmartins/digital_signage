@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'campaign_id', 'media_asset_id', 'display_point_id', 'status',
+    'campaign_id', 'media_asset_id', 'display_point_id', 'position', 'status',
     'processing_started_at', 'distributed_at', 'last_attempt_at', 'error_message',
 ])]
 class MediaAssetDistribution extends Model

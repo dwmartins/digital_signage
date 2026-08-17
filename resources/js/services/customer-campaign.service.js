@@ -20,6 +20,8 @@ export default {
         data.media_asset_ids.forEach((id) => payload.append("media_asset_ids[]", id));
         data.files.forEach((file) => payload.append("files[]", file));
         data.media_order.forEach((index) => payload.append("media_order[]", index));
+        payload.append("media_assignments", JSON.stringify(data.media_assignments));
+        payload.append("display_orders", JSON.stringify(data.display_orders));
 
         return (await axios.post(`${API_URL}/customer/campaign-onboarding`, payload)).data;
     },

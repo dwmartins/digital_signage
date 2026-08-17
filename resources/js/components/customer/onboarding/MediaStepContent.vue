@@ -1,6 +1,6 @@
 <script setup>
 import AlertBox from "@/components/shared/AlertBox.vue";
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 const props = defineProps({
     form: {
@@ -11,24 +11,30 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    orientations: {
-        type: Array,
-        default: () => ["landscape"],
-    },
     libraryMedia: {
+        type: Array,
+        default: () => [],
+    },
+    displayPoints: {
         type: Array,
         default: () => [],
     },
 });
 
-const emit = defineEmits(["add-files", "remove-file", "toggle-library", "reorder"]);
+const emit = defineEmits(["add-files", "remove-file", "toggle-library", "save-assignments"]);
 const input = ref();
-const draggingIndex = ref(null);
 const contentSource = ref("upload");
 const previewVisible = ref(false);
 const previewFile = ref(null);
 const previewUrl = ref(null);
 const previewOrientation = ref("landscape");
+const assignmentVisible = ref(false);
+const assignmentItem = ref(null);
+const assignmentIsNew = ref(false);
+const assignmentPointIds = ref([]);
+const assignmentOrientation = ref(null);
+const assignmentQueue = ref([]);
+const knownItemKeys = ref([]);
 const fileUrls = new WeakMap();
 const generatedUrls = new Set();
 
@@ -37,11 +43,11 @@ const accept = computed(() => props.plan.media_type === "video"
     : "image/jpeg,image/png,image/webp");
 
 const typeLabel = computed(() => props.plan.media_type === "video" ? "vídeos" : "imagens");
-const availableOrientations = computed(() => [...new Set(
-    props.orientations.length ? props.orientations : ["landscape"],
-)]);
 const compatibleLibrary = computed(() => props.libraryMedia.filter(
     (media) => media.type === props.plan.media_type,
+));
+const compatibleAssignmentPoints = computed(() => props.displayPoints.filter(
+    (point) => point.orientation === assignmentOrientation.value,
 ));
 const selectedItems = computed(() => props.form.media_order.map((key) => {
     if (key.startsWith("library:")) {
@@ -67,14 +73,6 @@ const selected = (event) => {
     event.target.value = "";
 };
 
-const dropped = (targetIndex) => {
-    if (draggingIndex.value !== null && draggingIndex.value !== targetIndex) {
-        emit("reorder", draggingIndex.value, targetIndex);
-    }
-
-    draggingIndex.value = null;
-};
-
 const fileSize = (bytes) => {
     if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
@@ -93,10 +91,12 @@ const fileUrl = (file) => {
     return fileUrls.get(file);
 };
 
-const openPreview = (file) => {
+const openPreview = (item) => {
+    const file = item.file || item.media;
+
     previewFile.value = file;
     previewUrl.value = fileUrl(file);
-    previewOrientation.value = availableOrientations.value[0] ?? "landscape";
+    previewOrientation.value = assignedOrientation(item.key) ?? "landscape";
     previewVisible.value = true;
 };
 
@@ -108,6 +108,104 @@ const removeItem = (item) => {
 
     emit("remove-file", item.fileIndex);
 };
+
+const openAssignments = (item, isNew = false) => {
+    assignmentItem.value = item;
+    assignmentIsNew.value = isNew;
+    assignmentPointIds.value = [...assignedPointIds(item.key)];
+    assignmentOrientation.value = null;
+    assignmentVisible.value = true;
+};
+
+const selectAssignmentOrientation = (orientation) => {
+    assignmentOrientation.value = orientation;
+    const compatiblePointIds = props.displayPoints
+        .filter((point) => point.orientation === orientation)
+        .map((point) => point.id);
+
+    assignmentPointIds.value = assignmentPointIds.value.filter((id) => compatiblePointIds.includes(id));
+};
+
+const toggleAssignment = (point) => {
+    const index = assignmentPointIds.value.indexOf(point.id);
+
+    if (index >= 0) {
+        assignmentPointIds.value.splice(index, 1);
+        return;
+    }
+
+    assignmentPointIds.value.push(point.id);
+};
+
+const saveAssignments = () => {
+    if (!assignmentPointIds.value.length) return;
+
+    emit("save-assignments", assignmentItem.value.key, [...assignmentPointIds.value]);
+    assignmentIsNew.value = false;
+    assignmentVisible.value = false;
+};
+
+const cancelAssignments = () => {
+    if (assignmentIsNew.value && assignmentItem.value) {
+        removeItem(assignmentItem.value);
+    }
+
+    assignmentIsNew.value = false;
+    assignmentVisible.value = false;
+};
+
+const showNextAssignment = async () => {
+    const nextAssignment = assignmentQueue.value.shift();
+
+    if (!nextAssignment) return;
+
+    await nextTick();
+    const currentItem = selectedItems.value.find((item) => nextAssignment.item.source === "library"
+        ? item.source === "library" && item.media.id === nextAssignment.item.media.id
+        : item.source === "file" && item.file === nextAssignment.item.file);
+
+    if (currentItem) {
+        openAssignments(currentItem, nextAssignment.isNew);
+        return;
+    }
+
+    showNextAssignment();
+};
+
+const assignedPointIds = (key) => props.form.media_assignments[key] ?? [];
+
+const assignedOrientation = (key) => {
+    const pointIds = assignedPointIds(key);
+    const point = props.displayPoints.find((item) => pointIds.includes(item.id));
+
+    return point?.orientation ?? null;
+};
+
+const pointFormat = (point) => point.orientation === "portrait"
+    ? "Vertical · 9:16"
+    : "Horizontal · 16:9";
+
+const previewResolution = computed(() => assignmentOrientation.value === "portrait"
+    ? "1080 × 1920 px"
+    : "1920 × 1080 px");
+
+watch(selectedItems, (items) => {
+    const previousCount = knownItemKeys.value.length;
+    const currentKeys = items.map((item) => item.key);
+    const addedItems = items.length > previousCount
+        ? items.filter((item) => !knownItemKeys.value.includes(item.key))
+        : [];
+
+    knownItemKeys.value = currentKeys;
+
+    if (!addedItems.length) return;
+
+    if (!assignmentVisible.value) {
+        openAssignments(addedItems.shift(), true);
+    }
+
+    assignmentQueue.value.push(...addedItems.map((item) => ({ item, isNew: true })));
+}, { flush: "post" });
 
 onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
 </script>
@@ -213,46 +311,18 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
         <div v-if="selectedItems.length" class="mt-4">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <strong>{{ selectedCount }} de {{ plan.media_limit }} mídia(s)</strong>
-                <Tag
-                    :value="form.playback_mode === 'random' ? 'Ordem aleatória' : 'Ordem definida por você'"
-                    :icon="form.playback_mode === 'random' ? 'pi pi-sync' : 'pi pi-sort-alt'"
-                    severity="secondary"
-                />
-            </div>
-
-            <div
-                v-if="plan.media_limit > 1"
-                class="playback-panel d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 rounded-3 p-3 mb-3"
-            >
-                <div>
-                    <strong class="d-block">Como as mídias devem aparecer?</strong>
-                    <small class="text-muted">Você pode definir a sequência ou deixar a plataforma alternar.</small>
-                </div>
-                <SelectButton
-                    v-model="form.playback_mode"
-                    :options="[
-                        { label: 'Na minha ordem', value: 'sequential' },
-                        { label: 'Aleatoriamente', value: 'random' },
-                    ]"
-                    optionLabel="label"
-                    optionValue="value"
-                    :allowEmpty="false"
-                />
+                <Tag value="Configure os locais de cada mídia" icon="pi pi-map-marker" severity="secondary" />
             </div>
 
             <AlertBox type="warning" class="mb-3">
-                Clique no ícone de olho para visualizar como sua mídia ficará no ponto de exibição. Você poderá alterá-la futuramente.
+                Use o ícone de localização para escolher os pontos desta mídia e o ícone de olho para pré-visualizá-la. Você poderá alterar essas definições futuramente.
             </AlertBox>
 
             <div class="d-grid gap-2">
                 <div
                     v-for="(item, index) in selectedItems"
                     :key="item.key"
-                    class="media-item d-flex align-items-center gap-3 rounded-3 p-3"
-                    :draggable="form.playback_mode === 'sequential'"
-                    @dragstart="draggingIndex = index"
-                    @dragover.prevent
-                    @drop="dropped(index)"
+                    class="media-item d-flex flex-wrap align-items-center gap-3 rounded-3 p-3"
                 >
                     <span class="file-preview d-inline-grid align-items-center justify-content-center rounded-3 flex-shrink-0 overflow-hidden">
                         <img v-if="plan.media_type === 'image'" :src="fileUrl(item.file || item.media)" :alt="item.file?.name || item.media?.name" />
@@ -260,22 +330,34 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
                     </span>
                     <div class="min-w-0 flex-grow-1">
                         <strong class="d-block text-truncate">{{ index + 1 }}. {{ item.file?.name || item.media?.name }}</strong>
-                        <small class="text-muted">
+                        <small class="text-muted d-block">
                             {{ fileSize(item.file?.size ?? item.media?.size_bytes) }} · {{ item.source === "library" ? "Biblioteca" : "Novo arquivo" }}
                         </small>
+                        <Tag
+                            v-if="assignedOrientation(item.key)"
+                            :value="assignedOrientation(item.key) === 'portrait' ? 'Vertical' : 'Horizontal'"
+                            :icon="assignedOrientation(item.key) === 'portrait' ? 'pi pi-mobile' : 'pi pi-desktop'"
+                            severity="info"
+                            class="mt-2"
+                        />
                     </div>
                     <div class="media-actions d-flex align-items-center flex-shrink-0">
-                        <i
-                            v-if="form.playback_mode === 'sequential' && selectedItems.length > 1"
-                            class="pi pi-bars drag-handle text-muted mx-2"
-                        ></i>
+                        <Button
+                            icon="pi pi-map-marker"
+                            severity="secondary"
+                            variant="text"
+                            rounded
+                            v-tooltip.top="'Definir os pontos desta mídia'"
+                            aria-label="Definir pontos de exibição"
+                            @click="openAssignments(item, false)"
+                        />
                         <Button
                             icon="pi pi-eye"
                             severity="secondary"
                             variant="text"
                             rounded
                             aria-label="Pré-visualizar mídia"
-                            @click="openPreview(item.file || item.media)"
+                            @click="openPreview(item)"
                         />
                         <Button
                             icon="pi pi-trash"
@@ -286,13 +368,191 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
                             @click="removeItem(item)"
                         />
                     </div>
+                    <div class="media-assignment-summary d-flex flex-wrap align-items-center gap-2">
+                        <Tag
+                            :value="assignedPointIds(item.key).length === displayPoints.length
+                                ? 'Todos os pontos selecionados'
+                                : `${assignedPointIds(item.key).length} de ${displayPoints.length} ponto(s)`"
+                            icon="pi pi-map-marker"
+                            severity="secondary"
+                        />
+                        <small class="text-muted">Você pode usar uma mídia diferente em cada orientação ou local.</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <Dialog
+            v-model:visible="assignmentVisible"
+            modal
+            :draggable="false"
+            header="Pontos desta mídia"
+            :style="{ width: 'min(94vw, 720px)' }"
+            :closable="false"
+            :closeOnEscape="false"
+            @hide="showNextAssignment"
+        >
+            <div v-if="assignmentItem">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span class="file-preview d-inline-grid align-items-center justify-content-center rounded-3 flex-shrink-0 overflow-hidden">
+                        <img
+                            v-if="plan.media_type === 'image'"
+                            :src="fileUrl(assignmentItem.file || assignmentItem.media)"
+                            :alt="assignmentItem.file?.name || assignmentItem.media?.name"
+                        />
+                        <i v-else class="pi pi-video"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <strong class="d-block text-truncate">
+                            {{ assignmentItem.file?.name || assignmentItem.media?.name }}
+                        </strong>
+                        <small class="text-muted">
+                            Selecione onde este conteúdo deverá ser exibido.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="orientation-choice rounded-4 p-3 p-md-4 mb-4">
+                    <strong class="d-block mb-1">Qual é a orientação desta mídia?</strong>
+                    <small class="d-block text-muted mb-3">
+                        Escolha o formato para encontrar os pontos de exibição compatíveis.
+                    </small>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <button
+                                type="button"
+                                class="orientation-option d-flex flex-column align-items-center justify-content-center gap-2 w-100 h-100 rounded-3 p-3"
+                                :class="{ selected: assignmentOrientation === 'landscape' }"
+                                @click="selectAssignmentOrientation('landscape')"
+                            >
+                                <i class="pi pi-desktop"></i>
+                                <strong>Horizontal</strong>
+                                <small>16:9 · 1920 × 1080 px</small>
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button
+                                type="button"
+                                class="orientation-option d-flex flex-column align-items-center justify-content-center gap-2 w-100 h-100 rounded-3 p-3"
+                                :class="{ selected: assignmentOrientation === 'portrait' }"
+                                @click="selectAssignmentOrientation('portrait')"
+                            >
+                                <i class="pi pi-mobile"></i>
+                                <strong>Vertical</strong>
+                                <small>9:16 · 1080 × 1920 px</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <template v-if="assignmentOrientation">
+                    <AlertBox type="warning" class="mb-3">
+                        Esta mídia só poderá ser adicionada aos pontos com orientação
+                        <strong>{{ assignmentOrientation === "portrait" ? "vertical" : "horizontal" }}</strong>.
+                        Use a proporção indicada para preservar a qualidade da exibição.
+                    </AlertBox>
+
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <strong>Pontos compatíveis</strong>
+                        <Tag
+                            :value="`${assignmentPointIds.length} selecionado(s)`"
+                            icon="pi pi-map-marker"
+                            severity="secondary"
+                        />
+                    </div>
+
+                    <div v-if="compatibleAssignmentPoints.length" class="row g-3">
+                        <div v-for="point in compatibleAssignmentPoints" :key="point.id" class="col-12 col-md-6">
+                            <button
+                                type="button"
+                                class="assignment-point d-flex align-items-start gap-3 text-start w-100 h-100 rounded-3 p-3"
+                                :class="{ selected: assignmentPointIds.includes(point.id) }"
+                                @click="toggleAssignment(point)"
+                            >
+                                <span class="assignment-point-icon d-inline-grid align-items-center justify-content-center rounded-3 flex-shrink-0">
+                                    <i :class="point.orientation === 'portrait' ? 'pi pi-mobile' : 'pi pi-desktop'"></i>
+                                </span>
+                                <span class="min-w-0 flex-grow-1">
+                                    <strong class="d-block text-truncate">{{ point.name }}</strong>
+                                    <small class="d-block text-muted text-truncate">{{ point.establishment?.name }}</small>
+                                    <small class="d-block text-primary fw-semibold mt-2">{{ pointFormat(point) }}</small>
+                                </span>
+                                <i
+                                    :class="assignmentPointIds.includes(point.id)
+                                        ? 'pi pi-check-circle text-primary'
+                                        : 'pi pi-circle text-muted'"
+                                ></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-else class="empty-compatible-points text-center rounded-4 p-4">
+                        <i class="pi pi-map-marker fs-2 text-muted"></i>
+                        <p class="text-muted mt-3 mb-0">
+                            Nenhum ponto {{ assignmentOrientation === "portrait" ? "vertical" : "horizontal" }} foi selecionado na etapa anterior.
+                        </p>
+                    </div>
+
+                    <div class="assignment-preview mt-4 pt-4">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+                            <div>
+                                <strong class="d-block">Pré-visualização da mídia</strong>
+                                <small class="text-muted">Simulação no formato escolhido para a exibição.</small>
+                            </div>
+                            <Tag
+                                :value="`${assignmentOrientation === 'portrait' ? 'Vertical · 9:16' : 'Horizontal · 16:9'} · ${previewResolution}`"
+                                :icon="assignmentOrientation === 'portrait' ? 'pi pi-mobile' : 'pi pi-desktop'"
+                                severity="secondary"
+                            />
+                        </div>
+
+                        <div class="preview-stage assignment-preview-stage d-flex align-items-center justify-content-center rounded-4 p-3 p-md-4">
+                            <div class="screen-frame" :class="assignmentOrientation">
+                                <div class="screen-camera"></div>
+                                <div class="screen-content">
+                                    <img
+                                        v-if="plan.media_type === 'image'"
+                                        :src="fileUrl(assignmentItem.file || assignmentItem.media)"
+                                        :alt="assignmentItem.file?.name || assignmentItem.media?.name"
+                                    />
+                                    <video
+                                        v-else
+                                        :src="fileUrl(assignmentItem.file || assignmentItem.media)"
+                                        controls
+                                        playsinline
+                                    ></video>
+                                </div>
+                                <div class="screen-brand">PREVIEW</div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <template #footer>
+                <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 w-100">
+                    <Button
+                        label="Cancelar"
+                        icon="pi pi-times"
+                        severity="secondary"
+                        outlined
+                        @click="cancelAssignments"
+                    />
+                    <Button
+                        label="Salvar pontos"
+                        icon="pi pi-check"
+                        :disabled="!assignmentOrientation || !assignmentPointIds.length"
+                        @click="saveAssignments"
+                    />
+                </div>
+            </template>
+        </Dialog>
+
+        <Dialog
             v-model:visible="previewVisible"
             modal
+            :draggable="false"
             header="Pré-visualização da mídia"
             :style="{ width: 'min(94vw, 920px)' }"
         >
@@ -304,21 +564,11 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
                     </small>
                 </div>
 
-                <SelectButton
-                    v-model="previewOrientation"
-                    :options="[
-                        { label: 'Horizontal', value: 'landscape', icon: 'pi pi-desktop' },
-                        { label: 'Vertical', value: 'portrait', icon: 'pi pi-mobile' },
-                    ]"
-                    optionLabel="label"
-                    optionValue="value"
-                    :allowEmpty="false"
-                >
-                    <template #option="slotProps">
-                        <i :class="slotProps.option.icon" class="me-2"></i>
-                        <span>{{ slotProps.option.label }}</span>
-                    </template>
-                </SelectButton>
+                <Tag
+                    :value="previewOrientation === 'portrait' ? 'Vertical · 9:16' : 'Horizontal · 16:9'"
+                    :icon="previewOrientation === 'portrait' ? 'pi pi-mobile' : 'pi pi-desktop'"
+                    severity="secondary"
+                />
             </div>
 
             <div class="preview-stage d-flex align-items-center justify-content-center rounded-4 p-3 p-md-4">
@@ -449,10 +699,86 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
     font-size: 1.5rem;
 }
 
-.playback-panel,
 .media-item {
     border: 1px solid var(--p-content-border-color);
     background: var(--p-content-background);
+}
+
+.media-assignment-summary {
+    width: 100%;
+    border-top: 1px solid var(--p-content-border-color);
+    padding-top: 0.65rem;
+}
+
+.assignment-point {
+    border: 1px solid var(--p-content-border-color);
+    color: var(--p-text-color);
+    background: var(--p-content-background);
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.orientation-choice,
+.empty-compatible-points {
+    border: 1px solid var(--p-content-border-color);
+    background: var(--p-surface-50);
+}
+
+.orientation-option {
+    border: 1px solid var(--p-content-border-color);
+    color: var(--p-text-color);
+    background: var(--p-content-background);
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.orientation-option:hover,
+.orientation-option.selected {
+    border-color: var(--p-primary-color);
+    background: color-mix(in srgb, var(--p-primary-color) 5%, var(--p-content-background));
+}
+
+.orientation-option:hover {
+    transform: translateY(-1px);
+}
+
+.orientation-option.selected {
+    box-shadow: 0 0 0 1px var(--p-primary-color);
+}
+
+.orientation-option > i {
+    color: var(--p-primary-color);
+    font-size: 1.5rem;
+}
+
+.orientation-option small {
+    color: var(--p-text-muted-color);
+    font-size: 0.72rem;
+}
+
+.assignment-point:hover,
+.assignment-point.selected {
+    border-color: var(--p-primary-color);
+    background: color-mix(in srgb, var(--p-primary-color) 5%, var(--p-content-background));
+}
+
+.assignment-point-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--p-primary-color);
+    background: var(--p-primary-100);
+}
+
+.assignment-preview {
+    border-top: 1px solid var(--p-content-border-color);
+}
+
+.assignment-preview-stage {
+    min-height: 22rem;
 }
 
 .file-preview {
@@ -474,10 +800,6 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
 
 .min-w-0 {
     min-width: 0;
-}
-
-.drag-handle {
-    cursor: grab;
 }
 
 .preview-stage {
@@ -570,28 +892,6 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
         height: 3.25rem;
     }
 
-    .playback-panel {
-        min-width: 0;
-    }
-
-    .playback-panel :deep(.p-selectbutton) {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 100%;
-    }
-
-    .playback-panel :deep(.p-togglebutton) {
-        min-width: 0;
-        padding-inline: 0.5rem;
-    }
-
-    .playback-panel :deep(.p-togglebutton-label) {
-        overflow: hidden;
-        font-size: 0.8rem;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
     .media-item {
         display: grid !important;
         grid-template-columns: 3rem minmax(0, 1fr);
@@ -612,6 +912,10 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
         padding-top: 0.35rem;
     }
 
+    .media-assignment-summary {
+        grid-column: 1 / -1;
+    }
+
     .file-preview {
         width: 3rem;
         height: 3rem;
@@ -619,6 +923,27 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
 
     .preview-stage {
         min-height: 25rem;
+    }
+
+    .assignment-preview-stage {
+        min-height: 21rem;
+    }
+
+    .orientation-choice {
+        padding: 0.75rem !important;
+    }
+
+    .orientation-option {
+        padding-inline: 0.5rem !important;
+    }
+
+    .orientation-option strong {
+        font-size: 0.9rem;
+    }
+
+    .orientation-option small {
+        font-size: 0.65rem;
+        text-align: center;
     }
 }
 </style>

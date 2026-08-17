@@ -54,6 +54,7 @@ return new class extends Migration
             $table->foreignId('campaign_id')->constrained()->cascadeOnDelete();
             $table->foreignId('media_asset_id')->constrained()->cascadeOnDelete();
             $table->foreignId('display_point_id')->constrained()->cascadeOnDelete();
+            $table->unsignedSmallInteger('position')->default(1);
             $table->string('status', 32)->default('pending')->index();
             $table->timestamp('processing_started_at')->nullable();
             $table->timestamp('distributed_at')->nullable();

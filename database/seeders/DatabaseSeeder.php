@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AddAdminSeeder::class,
             AddDefaultPermissionSeeder::class,
             AddDefaultEmailSettingSeeder::class,
+            AddDefaultStorageSettingSeeder::class,
             AddDefaultLocalitySeeder::class,
             AddDemoNetworkSeeder::class,
         ]);

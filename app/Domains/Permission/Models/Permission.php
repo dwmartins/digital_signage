@@ -50,6 +50,10 @@ class Permission extends Model
 
     public const EMAIL_SETTINGS_UPDATE = 'email-settings.update';
 
+    public const STORAGE_SETTINGS_VIEW = 'storage-settings.view';
+
+    public const STORAGE_SETTINGS_UPDATE = 'storage-settings.update';
+
     public const ESTABLISHMENTS_VIEW = 'establishments.view';
 
     public const ESTABLISHMENTS_CREATE = 'establishments.create';
@@ -258,6 +262,18 @@ class Permission extends Model
                 'group' => 'settings',
                 'group_label' => 'Configurações',
                 'description' => 'Permite alterar e ativar as configurações de envio de e-mails.',
+            ],
+            self::STORAGE_SETTINGS_VIEW => [
+                'name' => 'Visualizar configuração de armazenamento',
+                'group' => 'settings',
+                'group_label' => 'Configurações',
+                'description' => 'Permite consultar o destino configurado para os arquivos de mídia.',
+            ],
+            self::STORAGE_SETTINGS_UPDATE => [
+                'name' => 'Editar configuração de armazenamento',
+                'group' => 'settings',
+                'group_label' => 'Configurações',
+                'description' => 'Permite configurar armazenamento local, Cloudflare R2 ou Amazon S3.',
             ],
             self::ESTABLISHMENTS_VIEW => [
                 'name' => 'Visualizar estabelecimentos',

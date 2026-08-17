@@ -1,6 +1,7 @@
 <script setup>
 import { showAlert } from '@/helpers/alert';
 import mediaService from '@/services/media.service';
+import AlertBox from '@/components/shared/AlertBox.vue';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({ modelValue: Boolean, media: Object, customers: Array });
@@ -106,7 +107,7 @@ const onSubmit = async () => {
         emit('saved', response.media);
         visible.value = false;
     } catch (error) {
-        showAlert('error', error.response?.data);
+        showAlert('error', error.response?.data ?? error.message);
     } finally {
         saving.value = false;
     }
@@ -150,7 +151,7 @@ watch(() => props.modelValue, opened => {
             </div></div>
             <div class="col-12"><div class="field"><label>Descrição</label><Textarea v-model="form.description" rows="4" maxlength="5000" autoResize fluid /></div></div>
             <div v-if="isUpdate && selectedFile" class="col-12">
-                <Message severity="warn" :closable="false">A substituição do arquivo enviará a mídia novamente para aprovação.</Message>
+                <AlertBox type="warning">A substituição do arquivo enviará a mídia novamente para aprovação.</AlertBox>
             </div>
         </form>
 

@@ -3,26 +3,32 @@
 namespace App\Domains\Media\Services;
 
 use App\Domains\Media\Models\MediaAsset;
+use App\Domains\Setting\Services\StorageSettingService;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class MediaFileService
 {
+    public function __construct(private readonly StorageSettingService $storageSettingService)
+    {
+    }
+
     public function store(mixed $file, int $customerId): array
     {
         $mimeType = (string) $file->getMimeType();
         $type = str_starts_with($mimeType, 'image/') ? MediaAsset::TYPE_IMAGE : MediaAsset::TYPE_VIDEO;
         $videoMetadata = $type === MediaAsset::TYPE_VIDEO ? $this->videoMetadata($file->getRealPath()) : null;
         $extension = strtolower($file->extension());
-        $path = $file->storeAs("media/{$customerId}", Str::uuid().'.'.$extension, 'local');
+        $disk = $this->storageSettingService->mediaDisk();
+        $path = $file->storeAs("media/{$customerId}", Str::uuid().'.'.$extension, $disk);
 
         if (! $path) {
             throw new RuntimeException('Não foi possível armazenar o arquivo da mídia.');
         }
 
         $metadata = [
-            'type' => $type, 'original_name' => $file->getClientOriginalName(), 'disk' => 'local',
+            'type' => $type, 'original_name' => $file->getClientOriginalName(), 'disk' => $disk,
             'path' => $path, 'mime_type' => $mimeType, 'extension' => $extension,
             'size_bytes' => $file->getSize(), 'width' => null, 'height' => null,
             'duration_seconds' => null, 'orientation' => null,

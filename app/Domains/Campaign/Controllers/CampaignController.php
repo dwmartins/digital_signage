@@ -197,7 +197,7 @@ class CampaignController extends Controller
 
                 $uploadedMedia = $files->map(function ($file) use ($subscription, $data, $request, &$paths): MediaAsset {
                     $fileData = $this->mediaFileService->store($file, $subscription->user_id);
-                    $paths[] = $fileData['path'];
+                    $paths[] = ['disk' => $fileData['disk'], 'path' => $fileData['path']];
                     $this->validateMediaType($fileData['type'], $subscription);
 
                     return MediaAsset::query()->create([
@@ -234,7 +234,9 @@ class CampaignController extends Controller
 
             return response()->json(['message' => 'Campanha e mídias criadas com sucesso.', 'campaign' => $campaign], 201);
         } catch (Throwable $exception) {
-            Storage::disk('local')->delete($paths);
+            collect($paths)->groupBy('disk')->each(
+                fn ($files, string $disk) => Storage::disk($disk)->delete($files->pluck('path')->all()),
+            );
             throw $exception;
         }
     }
@@ -273,7 +275,7 @@ class CampaignController extends Controller
 
                 $uploadedMedia = $files->map(function ($file) use ($campaign, $data, $request, &$paths): MediaAsset {
                     $fileData = $this->mediaFileService->store($file, $campaign->user_id);
-                    $paths[] = $fileData['path'];
+                    $paths[] = ['disk' => $fileData['disk'], 'path' => $fileData['path']];
                     $this->validateMediaType($fileData['type'], $campaign->subscription);
 
                     return MediaAsset::query()->create([
@@ -304,7 +306,9 @@ class CampaignController extends Controller
 
             return response()->json(['message' => 'Campanha atualizada com sucesso.', 'campaign' => $campaign]);
         } catch (Throwable $exception) {
-            Storage::disk('local')->delete($paths);
+            collect($paths)->groupBy('disk')->each(
+                fn ($files, string $disk) => Storage::disk($disk)->delete($files->pluck('path')->all()),
+            );
             throw $exception;
         }
     }

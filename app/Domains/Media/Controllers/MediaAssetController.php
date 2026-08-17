@@ -11,6 +11,7 @@ use App\Domains\Media\Requests\MediaApprovalRequest;
 use App\Domains\Media\Requests\MediaAssetRequest;
 use App\Domains\Media\Services\MediaHistoryLogger;
 use App\Domains\Media\Services\MediaStatusService;
+use App\Domains\Setting\Services\StorageSettingService;
 use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +28,8 @@ use Throwable;
 
 class MediaAssetController extends Controller
 {
+    public function __construct(private readonly StorageSettingService $storageSettingService) {}
+
     /**
      * Lista as mídias com filtros e paginação.
      */
@@ -152,6 +155,7 @@ class MediaAssetController extends Controller
     public function store(MediaAssetRequest $request): JsonResponse
     {
         $path = null;
+        $disk = null;
 
         try {
             $data = $request->validated();
@@ -160,6 +164,7 @@ class MediaAssetController extends Controller
 
             $fileData = $this->storeFile($file, (int) $data['user_id']);
             $path = $fileData['path'];
+            $disk = $fileData['disk'];
             $data = array_merge($data, $fileData, [
                 'uploaded_by' => $request->user()->id,
                 'processing_status' => MediaAsset::PROCESSING_READY,
@@ -191,8 +196,8 @@ class MediaAssetController extends Controller
                 'media' => $media,
             ], 201);
         } catch (Throwable $exception) {
-            if ($path) {
-                Storage::disk('local')->delete($path);
+            if ($path && $disk) {
+                Storage::disk($disk)->delete($path);
             }
 
             throw $exception;
@@ -222,12 +227,15 @@ class MediaAssetController extends Controller
 
         $oldValues = $media->toArray();
         $oldPath = $media->path;
+        $oldDisk = $media->disk;
         $newPath = null;
+        $newDisk = null;
 
         try {
             if ($file) {
                 $fileData = $this->storeFile($file, (int) $data['user_id']);
                 $newPath = $fileData['path'];
+                $newDisk = $fileData['disk'];
                 $data = array_merge($data, $fileData, [
                     'processing_status' => MediaAsset::PROCESSING_READY,
                     'approval_status' => MediaAsset::APPROVAL_PENDING,
@@ -252,7 +260,7 @@ class MediaAssetController extends Controller
             });
 
             if ($newPath && $oldPath !== $newPath) {
-                Storage::disk($media->disk)->delete($oldPath);
+                Storage::disk($oldDisk)->delete($oldPath);
             }
 
             $media->refresh()->load([
@@ -287,8 +295,8 @@ class MediaAssetController extends Controller
                 'media' => $media,
             ]);
         } catch (Throwable $exception) {
-            if ($newPath) {
-                Storage::disk('local')->delete($newPath);
+            if ($newPath && $newDisk) {
+                Storage::disk($newDisk)->delete($newPath);
             }
 
             throw $exception;
@@ -433,7 +441,8 @@ class MediaAssetController extends Controller
             : null;
         $extension = strtolower($file->extension());
         $filename = Str::uuid().'.'.$extension;
-        $path = $file->storeAs("media/{$customerId}", $filename, 'local');
+        $disk = $this->storageSettingService->mediaDisk();
+        $path = $file->storeAs("media/{$customerId}", $filename, $disk);
 
         if (! $path) {
             throw new RuntimeException('Não foi possível armazenar o arquivo da mídia.');
@@ -442,7 +451,7 @@ class MediaAssetController extends Controller
         $metadata = [
             'type' => $type,
             'original_name' => $file->getClientOriginalName(),
-            'disk' => 'local',
+            'disk' => $disk,
             'path' => $path,
             'mime_type' => $mimeType,
             'extension' => $extension,

@@ -331,7 +331,7 @@ const submit = async () => {
         const response = isUpdate.value ? await campaignService.update(form) : await campaignService.create(form);
         showAlert("success", response.message);
         emit("saved"); visible.value = false;
-    } catch (error) { showAlert("error", error.response?.data); } finally { saving.value = false; }
+    } catch (error) { showAlert("error", error.response?.data ?? error.message); } finally { saving.value = false; }
 };
 
 watch(() => form.subscription_id, () => {

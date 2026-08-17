@@ -11,6 +11,7 @@ import commercial from './commercial';
 import campaigns from './campaigns';
 import localities from './localities';
 import emailSettings from './emailSettings';
+import storageSettings from './storageSettings';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -49,6 +50,7 @@ export default [
             ...campaigns,
             ...localities,
             ...emailSettings,
+            ...storageSettings,
             ...commercial
         ]
     }

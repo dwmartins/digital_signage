@@ -34,6 +34,7 @@ export const platformNavItems = [
         icon: 'pi pi-cog',
         children: [
             { label: 'Localidades', icon: 'pi pi-map', to: '/platform/configuracoes/localidades', permission: 'localities.view' },
+            { label: 'Envio de e-mail', icon: 'pi pi-envelope', to: '/platform/configuracoes/email', permission: 'email-settings.view' },
         ],
     },
     { label: 'Usuários suporte', icon: 'pi pi-headphones', to: '/platform/usuarios-suporte', permission: 'support-users.view' },

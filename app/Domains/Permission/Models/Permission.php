@@ -46,6 +46,10 @@ class Permission extends Model
 
     public const LOCALITIES_DELETE = 'localities.delete';
 
+    public const EMAIL_SETTINGS_VIEW = 'email-settings.view';
+
+    public const EMAIL_SETTINGS_UPDATE = 'email-settings.update';
+
     public const ESTABLISHMENTS_VIEW = 'establishments.view';
 
     public const ESTABLISHMENTS_CREATE = 'establishments.create';
@@ -242,6 +246,18 @@ class Permission extends Model
                 'group' => 'localities',
                 'group_label' => 'Localidades',
                 'description' => 'Permite excluir localidades sem vínculos.',
+            ],
+            self::EMAIL_SETTINGS_VIEW => [
+                'name' => 'Visualizar configuração de e-mail',
+                'group' => 'settings',
+                'group_label' => 'Configurações',
+                'description' => 'Permite consultar os dados utilizados para envio de e-mails.',
+            ],
+            self::EMAIL_SETTINGS_UPDATE => [
+                'name' => 'Editar configuração de e-mail',
+                'group' => 'settings',
+                'group_label' => 'Configurações',
+                'description' => 'Permite alterar e ativar as configurações de envio de e-mails.',
             ],
             self::ESTABLISHMENTS_VIEW => [
                 'name' => 'Visualizar estabelecimentos',

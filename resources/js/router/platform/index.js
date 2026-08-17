@@ -10,6 +10,7 @@ import media from './media';
 import commercial from './commercial';
 import campaigns from './campaigns';
 import localities from './localities';
+import emailSettings from './emailSettings';
 
 const dashboardView = () => import('@/views/platform/DashboardView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
@@ -47,6 +48,7 @@ export default [
             ...media,
             ...campaigns,
             ...localities,
+            ...emailSettings,
             ...commercial
         ]
     }

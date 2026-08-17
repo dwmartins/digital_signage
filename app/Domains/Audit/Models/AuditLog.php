@@ -51,6 +51,8 @@ class AuditLog extends Model
 
     public const MODULE_TRANSACTIONS = 'transactions';
 
+    public const MODULE_SETTINGS = 'settings';
+
     public const MODULE_PROFILE = 'profile';
 
     public const MODULE_SUPPORT_USERS = 'support_users';
@@ -98,6 +100,7 @@ class AuditLog extends Model
             ['label' => 'Planos', 'value' => self::MODULE_PLANS],
             ['label' => 'Assinaturas', 'value' => self::MODULE_SUBSCRIPTIONS],
             ['label' => 'Transações', 'value' => self::MODULE_TRANSACTIONS],
+            ['label' => 'Configurações', 'value' => self::MODULE_SETTINGS],
             ['label' => 'Perfil', 'value' => self::MODULE_PROFILE],
             ['label' => 'Usuários suporte', 'value' => self::MODULE_SUPPORT_USERS],
             ['label' => 'Permissões', 'value' => self::MODULE_PERMISSIONS],

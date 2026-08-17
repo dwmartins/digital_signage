@@ -4,8 +4,10 @@ import { showAlert } from "@/helpers/alert";
 import customerDashboardService from "@/services/customer-dashboard.service";
 import { useAuthStore } from "@/stores/authStore";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const auth = useAuthStore();
+const router = useRouter();
 const loading = ref(true);
 const hasActiveSubscription = ref(false);
 
@@ -68,6 +70,7 @@ onMounted(fetchDashboard);
                         iconPos="right"
                         size="large"
                         class="start-button px-4"
+                        @click="router.push({ name: 'customer.campaign-onboarding' })"
                     />
 
                     <div class="benefits d-flex flex-wrap justify-content-center gap-3 gap-md-4 mt-4">

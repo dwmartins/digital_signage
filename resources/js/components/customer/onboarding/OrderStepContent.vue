@@ -189,7 +189,7 @@ onBeforeUnmount(() => generatedUrls.forEach((url) => URL.revokeObjectURL(url)));
                                             size="small"
                                             :disabled="index === pointMedia(point.id).length - 1"
                                             aria-label="Mover mídia para baixo"
-                                            @click="$emit('reorder', point.id, index, index + 1)"
+                                            @click="$emit( 'reorder', point.id, index, index + 1)"
                                         />
                                         <i class="pi pi-bars drag-handle text-muted ms-1"></i>
                                     </span>

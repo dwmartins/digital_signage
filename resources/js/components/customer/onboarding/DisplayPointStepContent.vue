@@ -129,12 +129,12 @@ const displayFormat = (orientation) => orientation === "portrait"
                             <Tag
                                 :value="displayFormat(point.orientation).label"
                                 :icon="displayFormat(point.orientation).icon"
-                                severity="secondary"
+                                severity="info"
                             />
                             <Tag
                                 :value="`Proporção ${displayFormat(point.orientation).ratio}`"
                                 icon="pi pi-expand"
-                                severity="secondary"
+                                severity="info"
                             />
                         </span>
                         <small class="resolution-hint d-flex align-items-center gap-2 mt-2">

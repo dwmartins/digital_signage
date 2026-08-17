@@ -21,7 +21,7 @@ const visible = computed({ get: () => props.modelValue, set: value => emit('upda
 const isUpdate = computed(() => !!props.media?.id);
 const acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
 
-const readVideoDuration = file => new Promise((resolve, reject) => {
+const readVideoDuration = file => new Promise(resolve => {
     const video = document.createElement('video');
     const objectUrl = URL.createObjectURL(file);
 
@@ -33,7 +33,7 @@ const readVideoDuration = file => new Promise((resolve, reject) => {
     };
     video.onerror = () => {
         URL.revokeObjectURL(objectUrl);
-        reject(new Error('Não foi possível identificar a duração do vídeo.'));
+        resolve(null);
     };
     video.src = objectUrl;
 });
@@ -63,11 +63,7 @@ const onFileChange = async event => {
         try {
             const duration = await readVideoDuration(file);
 
-            if (!Number.isFinite(duration) || duration <= 0) {
-                throw new Error('Não foi possível identificar a duração do vídeo.');
-            }
-
-            if (duration > 15) {
+            if (Number.isFinite(duration) && duration > 15) {
                 throw new Error('O vídeo deve possuir no máximo 15 segundos.');
             }
         } catch (error) {

@@ -172,7 +172,7 @@ const addFiles = async (newFiles) => {
         if (selectedPlan.value.media_type === "video") {
             const duration = await videoDuration(file);
 
-            if (!duration || duration > 15) {
+            if (Number.isFinite(duration) && duration > 15) {
                 showAlert("warning", `O vídeo ${file.name} deve possuir no máximo 15 segundos.`);
                 continue;
             }

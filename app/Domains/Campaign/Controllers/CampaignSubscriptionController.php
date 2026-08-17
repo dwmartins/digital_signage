@@ -9,6 +9,7 @@ use App\Domains\Billing\Models\Transaction;
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
 use App\Domains\Campaign\Requests\CampaignSubscriptionRequest;
+use App\Domains\Campaign\Requests\RenewCampaignSubscriptionRequest;
 use App\Domains\Media\Services\MediaStatusService;
 use App\Domains\Plan\Models\Plan;
 use App\Domains\User\Models\User;
@@ -27,6 +28,7 @@ class CampaignSubscriptionController extends Controller
     {
         $validated = $request->validate([
             'global' => ['nullable', 'string', 'max:255'],
+            'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where('role', User::ROLE_CUSTOMER)],
             'campaign_id' => ['nullable', 'integer', 'exists:campaigns,id'],
             'plan_id' => ['nullable', 'integer', 'exists:plans,id'],
             'status' => ['nullable', Rule::in($this->statuses())],
@@ -37,9 +39,13 @@ class CampaignSubscriptionController extends Controller
         $query = CampaignSubscription::query()->with(['customer:id,name,last_name,email', 'campaign:id,user_id,name,status', 'plan:id,name,billing_cycle']);
         if ($search = $validated['global'] ?? null) {
             $query->where(fn ($query) => $query->whereHas('campaign', fn ($query) => $query->where('name', 'like', "%{$search}%"))
-                ->orWhereHas('customer', fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")));
+                ->orWhereHas('customer', fn ($query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(name, ' ', COALESCE(last_name, '')) LIKE ?", ["%{$search}%"])
+                    ->orWhere('email', 'like', "%{$search}%")));
         }
-        foreach (['campaign_id', 'plan_id', 'status'] as $field) {
+        foreach (['user_id', 'campaign_id', 'plan_id', 'status'] as $field) {
             if ($value = $validated[$field] ?? null) {
                 $query->where($field, $value);
             }
@@ -205,6 +211,125 @@ class CampaignSubscriptionController extends Controller
         AuditLogger::record(module: AuditLog::MODULE_SUBSCRIPTIONS, action: AuditLog::ACTION_UPDATED, description: "Assinatura #{$subscription->id} cancelada.", auditable: $subscription, newValues: $subscription->toArray(), request: $request);
 
         return response()->json(['message' => 'Assinatura cancelada com sucesso.']);
+    }
+
+    /** Renova a vigência e registra uma nova cobrança paga. */
+    public function renew(RenewCampaignSubscriptionRequest $request, int $id): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $result = DB::transaction(function () use ($id, $request, $validated): array {
+            $subscription = CampaignSubscription::query()
+                ->lockForUpdate()
+                ->with(['campaign.mediaAssets', 'plan'])
+                ->find($id);
+
+            if (! $subscription) {
+                return ['error' => 'Assinatura não encontrada.', 'code' => 404];
+            }
+
+            if (! in_array($subscription->status, [
+                CampaignSubscription::STATUS_ACTIVE,
+                CampaignSubscription::STATUS_EXPIRED,
+            ], true)) {
+                return ['error' => 'Somente assinaturas ativas ou vencidas podem ser renovadas.', 'code' => 422];
+            }
+
+            $expectedEndsAt = isset($validated['expected_ends_at'])
+                ? CarbonImmutable::parse($validated['expected_ends_at'])
+                : null;
+
+            if (($subscription->ends_at === null) !== ($expectedEndsAt === null)
+                || ($subscription->ends_at && ! $subscription->ends_at->equalTo($expectedEndsAt))) {
+                return [
+                    'error' => 'A vigência foi alterada por outra operação. Atualize a listagem antes de renovar novamente.',
+                    'code' => 409,
+                ];
+            }
+
+            if ((float) $subscription->price > 0 && ! isset($validated['payment_method'])) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Selecione o método de pagamento utilizado.',
+                ]);
+            }
+
+            $oldValues = $subscription->toArray();
+            $previousEndsAt = $subscription->ends_at;
+            $renewalReference = $previousEndsAt?->isFuture()
+                ? $previousEndsAt->copy()
+                : now();
+            $newEndsAt = $this->calculateEndsAt($renewalReference, $subscription->billing_cycle);
+
+            $subscription->update([
+                'status' => CampaignSubscription::STATUS_ACTIVE,
+                'starts_at' => $subscription->starts_at ?? now(),
+                'ends_at' => $newEndsAt,
+                'cancelled_at' => null,
+            ]);
+
+            $invoice = null;
+            $transaction = null;
+
+            if ((float) $subscription->price > 0) {
+                $invoice = Invoice::query()->create([
+                    'campaign_subscription_id' => $subscription->id,
+                    'user_id' => $subscription->user_id,
+                    'number' => 'INV-'.now()->format('Ymd').'-'.strtoupper(Str::random(8)),
+                    'amount' => $subscription->price,
+                    'status' => Invoice::STATUS_PAID,
+                    'due_at' => now(),
+                    'paid_at' => now(),
+                ]);
+                $transaction = Transaction::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'user_id' => $subscription->user_id,
+                    'payment_method' => $validated['payment_method'],
+                    'type' => Transaction::TYPE_CHARGE,
+                    'status' => Transaction::STATUS_PAID,
+                    'amount' => $subscription->price,
+                    'processed_at' => now(),
+                    'metadata' => [
+                        'renewal' => true,
+                        'previous_ends_at' => $previousEndsAt?->toISOString(),
+                        'new_ends_at' => $newEndsAt->toISOString(),
+                        'notes' => $subscription->notes,
+                    ],
+                ]);
+            }
+
+            $subscription->campaign?->mediaAssets->each(
+                fn ($media) => MediaStatusService::syncSubscriptionStatus($media),
+            );
+
+            AuditLogger::record(
+                module: AuditLog::MODULE_SUBSCRIPTIONS,
+                action: AuditLog::ACTION_UPDATED,
+                description: (float) $subscription->price > 0
+                    ? "Assinatura #{$subscription->id} renovada e paga."
+                    : "Assinatura gratuita #{$subscription->id} renovada sem transação.",
+                auditable: $subscription,
+                oldValues: $oldValues,
+                newValues: $subscription->toArray(),
+                request: $request,
+            );
+
+            return [
+                'subscription' => $subscription->load(['campaign.customer', 'plan']),
+                'invoice' => $invoice,
+                'transaction' => $transaction,
+            ];
+        });
+
+        if (isset($result['error'])) {
+            return response()->json(['message' => $result['error']], $result['code']);
+        }
+
+        return response()->json([
+            'message' => $result['transaction']
+                ? 'Assinatura renovada e nova transação paga criada com sucesso.'
+                : 'Assinatura gratuita renovada sem gerar transação.',
+            ...$result,
+        ]);
     }
 
     private function snapshot(int $userId, Plan $plan, string $status = CampaignSubscription::STATUS_PENDING): array

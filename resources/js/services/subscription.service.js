@@ -34,6 +34,12 @@ export default {
             await axios.patch(`${API_URL}/campaign-subscriptions/${id}/approve`, data)
         ).data;
     },
+    /** Renova a vigência e gera uma nova cobrança paga. */
+    async renew(id, data = {}) {
+        return (
+            await axios.patch(`${API_URL}/campaign-subscriptions/${id}/renew`, data)
+        ).data;
+    },
     /** Cancela uma assinatura. */
     async cancel(id) {
         return (

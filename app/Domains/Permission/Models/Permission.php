@@ -112,6 +112,8 @@ class Permission extends Model
 
     public const SUBSCRIPTIONS_APPROVE = 'subscriptions.approve';
 
+    public const SUBSCRIPTIONS_RENEW = 'subscriptions.renew';
+
     public const SUBSCRIPTIONS_CANCEL = 'subscriptions.cancel';
 
     public const TRANSACTIONS_VIEW = 'transactions.view';
@@ -314,6 +316,7 @@ class Permission extends Model
             self::SUBSCRIPTIONS_CREATE => ['name' => 'Criar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite contratar um plano para um anunciante.'],
             self::SUBSCRIPTIONS_UPDATE => ['name' => 'Editar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite editar contratações ainda não ativas.'],
             self::SUBSCRIPTIONS_APPROVE => ['name' => 'Aprovar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite ativar assinaturas e gerar a cobrança inicial.'],
+            self::SUBSCRIPTIONS_RENEW => ['name' => 'Renovar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite renovar a vigência e registrar uma nova cobrança para a assinatura.'],
             self::SUBSCRIPTIONS_CANCEL => ['name' => 'Cancelar assinaturas', 'group' => 'subscriptions', 'group_label' => 'Assinaturas', 'description' => 'Permite cancelar assinaturas de campanhas.'],
             self::TRANSACTIONS_VIEW => ['name' => 'Visualizar transações', 'group' => 'transactions', 'group_label' => 'Transações', 'description' => 'Permite consultar o histórico financeiro das campanhas.'],
             self::SUPPORT_USERS_VIEW => [

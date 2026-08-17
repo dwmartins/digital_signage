@@ -223,7 +223,7 @@ onMounted(() => fetchDashboard());
 
             <div class="row g-3 mb-4">
                 <div class="col-12 col-xl-8">
-                    <Card class="h-100 border-0 shadow-sm">
+                    <Card class="subscription-card h-100 border-0 shadow-sm">
                         <template #title>
                             <div class="d-flex justify-content-between align-items-start gap-3">
                                 <div>
@@ -237,7 +237,12 @@ onMounted(() => fetchDashboard());
                         </template>
                         <template #content>
                             <div class="subscription-chart">
-                                <Chart type="line" :data="chartData" :options="chartOptions" />
+                                <Chart
+                                    class="h-100"
+                                    type="line"
+                                    :data="chartData"
+                                    :options="chartOptions"
+                                />
                             </div>
                         </template>
                     </Card>
@@ -477,7 +482,26 @@ onMounted(() => fetchDashboard());
 }
 
 .subscription-chart {
-    height: 19rem;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 19rem;
+}
+
+.subscription-card :deep(.p-card-body) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.subscription-card :deep(.p-card-content) {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.subscription-chart :deep(.p-chart) {
+    width: 100%;
+    height: 100%;
 }
 
 .network-score {
@@ -577,7 +601,7 @@ onMounted(() => fetchDashboard());
 
 @media (max-width: 575.98px) {
     .subscription-chart {
-        height: 16rem;
+        min-height: 16rem;
     }
 }
 </style>

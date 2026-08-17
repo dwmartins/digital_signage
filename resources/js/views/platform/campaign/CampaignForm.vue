@@ -46,9 +46,34 @@ const isUpdate = computed(() => !!props.campaign?.id);
 const availableCities = computed(() => cities.value.filter((city) => city.state_id === pointFilters.state_id));
 const availableNeighborhoods = computed(() => neighborhoods.value.filter((neighborhood) => neighborhood.city_id === pointFilters.city_id));
 
-const subscriptionOptions = computed(() => isUpdate.value && props.campaign?.subscription
-    ? [props.campaign.subscription, ...props.subscriptions.filter((item) => item.id !== props.campaign.subscription.id)]
-    : props.subscriptions);
+const subscriptionOptions = computed(() => {
+    const subscriptions = isUpdate.value && props.campaign?.subscription
+        ? [
+            props.campaign.subscription,
+            ...props.subscriptions.filter((item) => item.id !== props.campaign.subscription.id),
+        ]
+        : props.subscriptions;
+
+    return subscriptions.map((subscription) => {
+        const fullName = `${subscription.customer?.name ?? ""} ${subscription.customer?.last_name ?? ""}`.trim();
+        const mediaLabel = subscription.media_type === "video" ? "Vídeo" : "Imagem";
+        const cycleLabel = subscription.billing_cycle === "yearly" ? "Anual" : "Mensal";
+
+        return {
+            ...subscription,
+            search_id: `#${subscription.id} ${subscription.id}`,
+            search_plan: subscription.plan?.name ?? "",
+            search_customer: fullName,
+            search_email: subscription.customer?.email ?? "",
+            search_media: mediaLabel,
+            search_cycle: cycleLabel,
+            search_price: `${subscription.price} ${Number(subscription.price ?? 0).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+            })}`,
+        };
+    });
+});
 
 const selectedSubscription = computed(() => subscriptionOptions.value.find((item) => item.id === form.subscription_id));
 const accept = computed(() => selectedSubscription.value?.media_type === "video" ? ".mp4,.webm,.mov" : ".jpg,.jpeg,.png,.webp");
@@ -379,17 +404,46 @@ onBeforeUnmount(clearFilePreview);
                     <label>
                         <span class="text-danger me-1">*</span>Assinatura sem campanha
                     </label>
-                    <Select v-model="form.subscription_id" :options="subscriptionOptions" optionLabel="id"
-                        optionValue="id" :disabled="isUpdate" filter fluid :invalid="!!errors.subscription_id"
-                        placeholder="Selecione a assinatura criada anteriormente">
+                    <Select
+                        v-model="form.subscription_id"
+                        :options="subscriptionOptions"
+                        optionLabel="id"
+                        optionValue="id"
+                        :filterFields="[
+                            'search_id',
+                            'search_plan',
+                            'search_customer',
+                            'search_email',
+                            'search_media',
+                            'search_cycle',
+                            'search_price',
+                        ]"
+                        :disabled="isUpdate"
+                        :invalid="!!errors.subscription_id"
+                        filter
+                        fluid
+                        placeholder="Selecione a assinatura criada anteriormente"
+                    >
                         <template #option="{ option }">
-                            <div class="d-flex flex-column"><strong>#{{ option.id }} - {{ option.plan?.name
-                                    }}</strong><small>{{ customerName(option) }} · {{ option.media_type === 'video' ?
-                                    'Vídeo' : 'Imagem' }} · {{ money(option.price) }}</small></div>
+                            <div class="d-flex flex-column min-width-0 py-1">
+                                <strong class="text-truncate">
+                                    #{{ option.id }} - {{ option.plan?.name }}
+                                </strong>
+                                <small class="text-muted text-truncate">
+                                    <i class="pi pi-user me-1"></i>
+                                    {{ customerName(option) }} · {{ option.customer?.email }}
+                                </small>
+                                <small class="text-muted">
+                                    {{ option.search_media }} · {{ option.search_cycle }} · {{ money(option.price) }}
+                                </small>
+                            </div>
                         </template>
-                        <template #value="{ value }"><span v-if="value">#{{ value }} - {{
-                                selectedSubscription?.plan?.name }} · {{ customerName(selectedSubscription)
-                                }}</span>
+                        <template #value="{ value }">
+                            <span v-if="value" class="d-block text-truncate">
+                                #{{ value }} - {{ selectedSubscription?.plan?.name }} ·
+                                {{ customerName(selectedSubscription) }} ·
+                                {{ selectedSubscription?.customer?.email }}
+                            </span>
                         </template>
                     </Select>
                     <small v-if="errors.subscription_id" class="text-danger">{{ errors.subscription_id }}</small>

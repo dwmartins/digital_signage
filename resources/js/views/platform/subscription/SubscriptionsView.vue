@@ -1,6 +1,7 @@
 <script setup>
 import SubscriptionFormDialog from "@/components/dialog/subscription/SubscriptionFormDialog.vue";
 import SubscriptionApprovalDialog from "@/components/dialog/subscription/SubscriptionApprovalDialog.vue";
+import SubscriptionRenewalDialog from "@/components/dialog/subscription/SubscriptionRenewalDialog.vue";
 import Breadcrumb from "@/components/shared/Breadcrumb.vue";
 import EmptyData from "@/components/shared/EmptyData.vue";
 import TableSkeleton from "@/components/shared/TableSkeleton.vue";
@@ -24,10 +25,16 @@ const currentPage = ref(1);
 const perPage = ref(7);
 const pagination = ref({});
 
-const dialogs = reactive({ form: false, approval: false, filters: false });
+const dialogs = reactive({
+    form: false,
+    approval: false,
+    renewal: false,
+    filters: false,
+});
 
 const filters = reactive({
     global: { value: null, type: "string" },
+    user_id: { value: null, type: "number" },
     campaign_id: { value: null, type: "number" },
     plan_id: { value: null, type: "number" },
     status: { value: null, type: "string" },
@@ -41,6 +48,7 @@ const { applyFromRoute, syncToRoute, buildApiFilters } = useQueryFilters(
 const canUpdate = computed(() => auth.hasPermission("subscriptions.update"));
 const canCreate = computed(() => auth.hasPermission("subscriptions.create"));
 const canApprove = computed(() => auth.hasPermission("subscriptions.approve"));
+const canRenew = computed(() => auth.hasPermission("subscriptions.renew"));
 const canCancel = computed(() => auth.hasPermission("subscriptions.cancel"));
 
 const money = (v) =>
@@ -66,7 +74,15 @@ const fetchOptions = async () => {
         label: `#${x.id} - ${x.name} · ${x.customer?.name ?? ""} ${x.customer?.last_name ?? ""}`,
     }));
     plans.value = r.plans ?? [];
-    customers.value = (r.customers ?? []).map((item) => ({ ...item, full_name: `${item.name} ${item.last_name ?? ""}`.trim() }));
+    customers.value = (r.customers ?? []).map((item) => {
+        const fullName = `${item.name} ${item.last_name ?? ""}`.trim();
+
+        return {
+            ...item,
+            full_name: fullName,
+            display_label: `${fullName} · ${item.email}`,
+        };
+    });
     statusOptions.value = r.statuses ?? [];
 };
 
@@ -109,6 +125,16 @@ const openApproval = (data) => {
     dialogs.approval = true;
 };
 
+const openRenewal = (data) => {
+    if (!canRenew.value)
+        return showAlert(
+            "warning",
+            "Você não possui permissão para renovar assinaturas.",
+        );
+    subscription.value = { ...data };
+    dialogs.renewal = true;
+};
+
 const cancel = async (data) => {
     try {
         const r = await subscriptionService.cancel(data.id);
@@ -138,22 +164,29 @@ onMounted(async () => {
 </script>
 <template>
     <section class="container">
-        <div class="d-flex justify-content-between mb-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-start gap-3 mb-3">
             <Breadcrumb
                 :items="[
                     { icon: 'pi pi-home', to: '/' },
                     { label: 'Assinaturas' },
                 ]"
             />
-            <div class="d-flex gap-2">
+            <div class="d-flex justify-content-end gap-2">
                 <Button
                     class="d-md-none"
                     label="Filtros"
                     icon="pi pi-filter"
                     outlined
+                    size="small"
                     @click="dialogs.filters = true"
                 />
-                <Button label="Nova assinatura" icon="pi pi-plus" size="small" :disabled="!canCreate" @click="open()" />
+                <Button
+                    label="Nova assinatura"
+                    icon="pi pi-plus"
+                    size="small"
+                    :disabled="!canCreate"
+                    @click="open()"
+                />
             </div>
         </div>
         <Card class="mb-3 d-none d-md-block"
@@ -162,17 +195,39 @@ onMounted(async () => {
                     class="row g-3 align-items-end"
                     @submit.prevent="fetchAll(1)"
                 >
-                    <div class="col-lg-3">
+                    <div class="col-md-6 col-xl-4">
                         <div class="field">
                             <label>Buscar</label
                             ><InputText
                                 v-model="filters.global.value"
-                                placeholder="Campanha ou cliente"
+                                placeholder="Campanha, nome ou e-mail"
                                 fluid
                             />
                         </div>
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-md-6 col-xl-4">
+                        <div class="field">
+                            <label>Anunciante</label>
+                            <Select
+                                v-model="filters.user_id.value"
+                                :options="customers"
+                                optionLabel="display_label"
+                                optionValue="id"
+                                :filterFields="['full_name', 'email']"
+                                filter
+                                showClear
+                                fluid
+                            >
+                                <template #option="{ option }">
+                                    <div class="d-flex flex-column min-w-0">
+                                        <strong class="text-truncate">{{ option.full_name }}</strong>
+                                        <small class="text-muted text-truncate">{{ option.email }}</small>
+                                    </div>
+                                </template>
+                            </Select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-xl-4">
                         <div class="field">
                             <label>Campanha</label
                             ><Select
@@ -186,7 +241,7 @@ onMounted(async () => {
                             />
                         </div>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-md-6 col-xl-4">
                         <div class="field">
                             <label>Plano</label
                             ><Select
@@ -199,7 +254,7 @@ onMounted(async () => {
                             />
                         </div>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-md-6 col-xl-4">
                         <div class="field">
                             <label>Status</label
                             ><Select
@@ -212,7 +267,7 @@ onMounted(async () => {
                             />
                         </div>
                     </div>
-                    <div class="col-lg-2 d-flex gap-2">
+                    <div class="col-md-6 col-xl-4 d-flex justify-content-end gap-2">
                         <Button
                             icon="pi pi-filter-slash"
                             outlined
@@ -242,9 +297,29 @@ onMounted(async () => {
                 <div class="col-12">
                     <InputText
                         v-model="filters.global.value"
-                        placeholder="Campanha ou cliente"
+                        placeholder="Campanha, nome ou e-mail"
                         fluid
                     />
+                </div>
+                <div class="col-12">
+                    <Select
+                        v-model="filters.user_id.value"
+                        :options="customers"
+                        optionLabel="display_label"
+                        optionValue="id"
+                        :filterFields="['full_name', 'email']"
+                        placeholder="Anunciante"
+                        filter
+                        showClear
+                        fluid
+                    >
+                        <template #option="{ option }">
+                            <div class="d-flex flex-column min-w-0">
+                                <strong class="text-truncate">{{ option.full_name }}</strong>
+                                <small class="text-muted text-truncate">{{ option.email }}</small>
+                            </div>
+                        </template>
+                    </Select>
                 </div>
                 <div class="col-12">
                     <Select
@@ -377,6 +452,17 @@ onMounted(async () => {
                                         data.status === 'cancelled'
                                     "
                                     @click="cancel(data)"
+                                /><Button
+                                    icon="pi pi-refresh"
+                                    text
+                                    rounded
+                                    severity="info"
+                                    :disabled="
+                                        !canRenew ||
+                                        !['active', 'expired'].includes(data.status)
+                                    "
+                                    v-tooltip.top="'Renovar assinatura'"
+                                    @click="openRenewal(data)"
                                 /></div></template></Column></DataTable
                 ><EmptyData
                     v-if="!loading && !items.length"
@@ -395,6 +481,11 @@ onMounted(async () => {
             v-model="dialogs.approval"
             :subscription="subscription"
             @approved="fetchAll(currentPage)"
+        />
+        <SubscriptionRenewalDialog
+            v-model="dialogs.renewal"
+            :subscription="subscription"
+            @renewed="fetchAll(currentPage)"
         />
     </section>
 </template>

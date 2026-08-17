@@ -19,6 +19,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/campaign-subscriptions/{id}/approve', [CampaignSubscriptionController::class, 'approve'])
         ->middleware('platform:subscriptions.approve');
 
+    Route::patch('/campaign-subscriptions/{id}/renew', [CampaignSubscriptionController::class, 'renew'])
+        ->middleware('platform:subscriptions.renew');
+
     Route::patch('/campaign-subscriptions/{id}/cancel', [CampaignSubscriptionController::class, 'cancel'])
         ->middleware('platform:subscriptions.cancel');
 

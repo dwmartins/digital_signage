@@ -149,6 +149,7 @@ class CampaignSubscriptionController extends Controller
     {
         $validated = $request->validate([
             'payment_method' => ['nullable', Rule::in(Transaction::paymentMethods())],
+            'payment_date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today'],
         ]);
 
         $result = DB::transaction(function () use ($id, $request, $validated): array {
@@ -176,8 +177,15 @@ class CampaignSubscriptionController extends Controller
                     ]);
                 }
 
-                $invoice = Invoice::query()->create(['campaign_subscription_id' => $subscription->id, 'user_id' => $subscription->user_id, 'number' => 'INV-'.now()->format('Ymd').'-'.strtoupper(Str::random(8)), 'amount' => $subscription->price, 'status' => Invoice::STATUS_PAID, 'due_at' => now(), 'paid_at' => now()]);
-                $transaction = Transaction::query()->create(['invoice_id' => $invoice->id, 'user_id' => $subscription->user_id, 'payment_method' => $validated['payment_method'], 'type' => Transaction::TYPE_CHARGE, 'status' => Transaction::STATUS_PAID, 'amount' => $subscription->price, 'processed_at' => now(), 'metadata' => $subscription->notes ? ['notes' => $subscription->notes] : null]);
+                if (! isset($validated['payment_date'])) {
+                    throw ValidationException::withMessages([
+                        'payment_date' => 'Informe a data em que o pagamento foi realizado.',
+                    ]);
+                }
+
+                $paidAt = CarbonImmutable::parse($validated['payment_date'])->startOfDay();
+                $invoice = Invoice::query()->create(['campaign_subscription_id' => $subscription->id, 'user_id' => $subscription->user_id, 'number' => 'INV-'.now()->format('Ymd').'-'.strtoupper(Str::random(8)), 'amount' => $subscription->price, 'status' => Invoice::STATUS_PAID, 'due_at' => $paidAt, 'paid_at' => $paidAt]);
+                $transaction = Transaction::query()->create(['invoice_id' => $invoice->id, 'user_id' => $subscription->user_id, 'payment_method' => $validated['payment_method'], 'type' => Transaction::TYPE_CHARGE, 'status' => Transaction::STATUS_PAID, 'amount' => $subscription->price, 'processed_at' => $paidAt, 'metadata' => $subscription->notes ? ['notes' => $subscription->notes] : null]);
             }
 
             AuditLogger::record(module: AuditLog::MODULE_SUBSCRIPTIONS, action: AuditLog::ACTION_UPDATED, description: (float) $subscription->price > 0 ? "Assinatura #{$subscription->id} aprovada e paga." : "Assinatura gratuita #{$subscription->id} aprovada sem transação.", auditable: $subscription, newValues: $subscription->toArray(), request: $request);

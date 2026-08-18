@@ -7,6 +7,7 @@ const props = defineProps({ modelValue: Boolean, subscription: Object });
 const emit = defineEmits(["update:modelValue", "approved"]);
 const approving = ref(false);
 const paymentMethod = ref(null);
+const paymentDate = ref(new Date());
 const paymentMethodOptions = [
     { label: "PIX", value: "pix", icon: "pi pi-qrcode" },
     { label: "Cartão de crédito", value: "credit_card", icon: "pi pi-credit-card" },
@@ -28,17 +29,33 @@ const isFree = computed(() => Number(props.subscription?.price ?? 0) === 0);
 const subscriptionTarget = computed(() => props.subscription?.campaign?.name
     ? `da campanha ${props.subscription.campaign.name}`
     : `#${props.subscription?.id} de ${props.subscription?.customer?.name ?? "cliente anunciante"}`);
+const formatDate = (date) => {
+    if (!date) return null;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};
 
 const approve = async () => {
     if (!isFree.value && !paymentMethod.value) {
         return showAlert("warning", "Selecione o método de pagamento utilizado.");
     }
 
+    if (!isFree.value && !paymentDate.value) {
+        return showAlert("warning", "Informe a data em que o pagamento foi realizado.");
+    }
+
     try {
         approving.value = true;
         const response = await subscriptionService.approve(
             props.subscription.id,
-            { payment_method: paymentMethod.value },
+            {
+                payment_method: paymentMethod.value,
+                payment_date: formatDate(paymentDate.value),
+            },
         );
         showAlert("success", response.message);
         emit("approved");
@@ -51,7 +68,10 @@ const approve = async () => {
 };
 
 watch(() => props.modelValue, (opened) => {
-    if (opened) paymentMethod.value = null;
+    if (opened) {
+        paymentMethod.value = null;
+        paymentDate.value = new Date();
+    }
 });
 </script>
 
@@ -95,6 +115,17 @@ watch(() => props.modelValue, (opened) => {
                         </template>
                     </Select>
                 </div>
+                <div v-if="!isFree" class="field mb-3">
+                    <label for="subscription-payment-date">Data do pagamento *</label>
+                    <DatePicker
+                        v-model="paymentDate"
+                        inputId="subscription-payment-date"
+                        dateFormat="dd/mm/yy"
+                        :maxDate="new Date()"
+                        showIcon
+                        fluid
+                    />
+                </div>
                 <small class="text-muted">{{
                     isFree
                         ? "Esta ação ativará a assinatura sem gerar fatura ou transação."
@@ -113,7 +144,7 @@ watch(() => props.modelValue, (opened) => {
                 icon="pi pi-check"
                 severity="success"
                 :loading="approving"
-                :disabled="!isFree && !paymentMethod"
+                :disabled="!isFree && (!paymentMethod || !paymentDate)"
                 @click="approve"
         /></template>
     </Dialog>

@@ -49,7 +49,6 @@ const canUpdate = computed(() => auth.hasPermission("subscriptions.update"));
 const canCreate = computed(() => auth.hasPermission("subscriptions.create"));
 const canApprove = computed(() => auth.hasPermission("subscriptions.approve"));
 const canRenew = computed(() => auth.hasPermission("subscriptions.renew"));
-const canCancel = computed(() => auth.hasPermission("subscriptions.cancel"));
 
 const money = (v) =>
     new Intl.NumberFormat("pt-BR", {
@@ -133,16 +132,6 @@ const openRenewal = (data) => {
         );
     subscription.value = { ...data };
     dialogs.renewal = true;
-};
-
-const cancel = async (data) => {
-    try {
-        const r = await subscriptionService.cancel(data.id);
-        showAlert("success", r.message);
-        fetchAll(currentPage.value);
-    } catch (e) {
-        showAlert("error", e.response?.data);
-    }
 };
 
 const clear = () => {
@@ -442,16 +431,6 @@ onMounted(async () => {
                                     "
                                     v-tooltip.top="'Aprovar e gerar cobrança'"
                                     @click="openApproval(data)"
-                                /><Button
-                                    icon="pi pi-ban"
-                                    text
-                                    rounded
-                                    severity="danger"
-                                    :disabled="
-                                        !canCancel ||
-                                        data.status === 'cancelled'
-                                    "
-                                    @click="cancel(data)"
                                 /><Button
                                     icon="pi pi-refresh"
                                     text

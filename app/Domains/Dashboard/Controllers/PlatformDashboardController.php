@@ -74,6 +74,7 @@ class PlatformDashboardController
                 'monthly_revenue' => $monthlyRevenue,
                 'active_subscriptions' => CampaignSubscription::query()->where('status', CampaignSubscription::STATUS_ACTIVE)->count(),
                 'pending_subscriptions' => CampaignSubscription::query()->where('status', CampaignSubscription::STATUS_PENDING)->count(),
+                'expired_subscriptions' => CampaignSubscription::query()->where('status', CampaignSubscription::STATUS_EXPIRED)->count(),
                 'display_points' => $totalPoints,
                 'attention_points' => $displayPoints->filter(fn (DisplayPoint $point) => $this->needsAttention($point, $connectionThreshold))->count(),
                 'pending_media' => MediaAsset::query()->where('approval_status', MediaAsset::APPROVAL_PENDING)->count(),

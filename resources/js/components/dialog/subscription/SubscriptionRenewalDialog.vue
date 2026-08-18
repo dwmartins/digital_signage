@@ -12,6 +12,7 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "renewed"]);
 const renewing = ref(false);
 const paymentMethod = ref(null);
+const paymentDate = ref(new Date());
 
 const paymentMethodOptions = [
     { label: "PIX", value: "pix", icon: "pi pi-qrcode" },
@@ -38,6 +39,16 @@ const money = (value) =>
         currency: "BRL",
     }).format(value ?? 0);
 
+const formatPaymentDate = (date) => {
+    if (!date) return null;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+};
+
 const newEndsAt = computed(() => {
     const currentEnd = props.subscription?.ends_at
         ? new Date(props.subscription.ends_at)
@@ -60,12 +71,17 @@ const renew = async () => {
         return showAlert("warning", "Selecione o método de pagamento utilizado.");
     }
 
+    if (!isFree.value && !paymentDate.value) {
+        return showAlert("warning", "Informe a data em que o pagamento foi realizado.");
+    }
+
     try {
         renewing.value = true;
         const response = await subscriptionService.renew(
             props.subscription.id,
             {
                 payment_method: paymentMethod.value,
+                payment_date: formatPaymentDate(paymentDate.value),
                 expected_ends_at: props.subscription.ends_at,
             },
         );
@@ -82,7 +98,10 @@ const renew = async () => {
 watch(
     () => props.modelValue,
     (opened) => {
-        if (opened) paymentMethod.value = null;
+        if (opened) {
+            paymentMethod.value = null;
+            paymentDate.value = new Date();
+        }
     },
 );
 </script>
@@ -155,6 +174,20 @@ watch(
                     </Select>
                 </div>
 
+                <div v-if="!isFree" class="field mb-3">
+                    <label for="renewal-payment-date">
+                        <span class="text-danger me-1">*</span>Data do pagamento
+                    </label>
+                    <DatePicker
+                        v-model="paymentDate"
+                        inputId="renewal-payment-date"
+                        dateFormat="dd/mm/yy"
+                        :maxDate="new Date()"
+                        showIcon
+                        fluid
+                    />
+                </div>
+
                 <small class="text-muted">
                     {{
                         isFree
@@ -178,7 +211,7 @@ watch(
                 icon="pi pi-refresh"
                 severity="success"
                 :loading="renewing"
-                :disabled="!isFree && !paymentMethod"
+                :disabled="!isFree && (!paymentMethod || !paymentDate)"
                 @click="renew"
             />
         </template>

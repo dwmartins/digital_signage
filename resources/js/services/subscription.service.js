@@ -40,10 +40,4 @@ export default {
             await axios.patch(`${API_URL}/campaign-subscriptions/${id}/renew`, data)
         ).data;
     },
-    /** Cancela uma assinatura. */
-    async cancel(id) {
-        return (
-            await axios.patch(`${API_URL}/campaign-subscriptions/${id}/cancel`)
-        ).data;
-    },
 };

@@ -154,7 +154,7 @@ onMounted(() => fetchDashboard());
 
         <template v-if="loading">
             <div class="row g-3 mb-4">
-                <div v-for="index in 7" :key="index" class="col-12 col-sm-6 col-xl-3">
+                <div v-for="index in 8" :key="index" class="col-12 col-sm-6 col-xl-3">
                     <Card class="h-100 border-0 shadow-sm">
                         <template #content>
                             <div class="d-flex justify-content-between gap-3">
@@ -223,6 +223,37 @@ onMounted(() => fetchDashboard());
                                 </div>
                                 <span class="pending-subscription-icon metric-icon flex-shrink-0">
                                     <i :class="(summary.pending_subscriptions ?? 0) > 0 ? 'pi pi-bell' : 'pi pi-check'"></i>
+                                </span>
+                            </div>
+                        </template>
+                    </Card>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <Card
+                        class="expired-subscription-card h-100 border-0 overflow-hidden"
+                        :class="{
+                            'has-expired': (summary.expired_subscriptions ?? 0) > 0,
+                            'metric-clickable': canAccess('subscriptions.view'),
+                        }"
+                        @click="canAccess('subscriptions.view') && router.push({
+                            name: 'platform.subscriptions',
+                            query: { status: 'expired' },
+                        })"
+                    >
+                        <template #content>
+                            <div class="d-flex justify-content-between align-items-start gap-3 position-relative">
+                                <div class="min-w-0">
+                                    <span class="d-block small mb-2">Assinaturas vencidas</span>
+                                    <strong class="d-block fs-3">{{ summary.expired_subscriptions ?? 0 }}</strong>
+                                    <small class="d-block mt-2">
+                                        {{ (summary.expired_subscriptions ?? 0) > 0
+                                            ? "Contratações aguardando renovação"
+                                            : "Nenhuma assinatura vencida" }}
+                                    </small>
+                                </div>
+                                <span class="expired-subscription-icon metric-icon flex-shrink-0">
+                                    <i :class="(summary.expired_subscriptions ?? 0) > 0 ? 'pi pi-calendar-times' : 'pi pi-check'"></i>
                                 </span>
                             </div>
                         </template>
@@ -500,6 +531,39 @@ onMounted(() => fetchDashboard());
 }
 
 .has-pending .pending-subscription-icon {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.expired-subscription-card {
+    color: var(--p-text-color);
+    background: color-mix(in srgb, var(--p-red-500) 7%, var(--p-content-background));
+    box-shadow: 0 0.5rem 1.25rem color-mix(in srgb, var(--p-red-500) 9%, transparent);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.expired-subscription-card small {
+    color: var(--p-text-muted-color);
+}
+
+.expired-subscription-card.has-expired {
+    color: #ffffff;
+    background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%);
+    box-shadow: 0 0.75rem 1.75rem rgba(185, 28, 28, 0.22);
+}
+
+.expired-subscription-card.has-expired small {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.expired-subscription-icon {
+    color: #dc2626;
+    background: color-mix(in srgb, var(--p-red-500) 16%, transparent);
+}
+
+.has-expired .expired-subscription-icon {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.18);
 }

@@ -40,7 +40,7 @@ const selectedCampaign = computed(() =>
 const selectableStatuses = computed(() => {
     const allowed = {
         pending: ["pending", "cancelled"],
-        active: ["pending", "active", "expired", "cancelled"],
+        active: ["active", "expired", "cancelled"],
         expired: ["pending", "expired", "cancelled"],
         cancelled: ["cancelled"],
     }[props.subscription?.status] ?? ["pending"];

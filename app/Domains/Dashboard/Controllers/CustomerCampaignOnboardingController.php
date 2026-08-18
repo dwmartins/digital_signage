@@ -12,7 +12,6 @@ use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Media\Models\MediaAssetDistribution;
 use App\Domains\Media\Services\MediaFileService;
 use App\Domains\Plan\Models\Plan;
-use App\Domains\User\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,10 +28,6 @@ class CustomerCampaignOnboardingController
     /** Retorna os planos e categorias disponíveis para a contratação. */
     public function options(Request $request): JsonResponse
     {
-        if ($request->user()->role !== User::ROLE_CUSTOMER) {
-            abort(403, 'Esta área é exclusiva para anunciantes.');
-        }
-
         return response()->json([
             'plans' => Plan::query()
                 ->where('status', Plan::STATUS_ACTIVE)
@@ -77,10 +72,6 @@ class CustomerCampaignOnboardingController
     /** Exibe uma mídia da biblioteca pertencente ao anunciante autenticado. */
     public function content(Request $request, int $id): mixed
     {
-        if ($request->user()->role !== User::ROLE_CUSTOMER) {
-            abort(403, 'Esta área é exclusiva para anunciantes.');
-        }
-
         $media = MediaAsset::query()
             ->where('user_id', $request->user()->id)
             ->find($id);

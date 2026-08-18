@@ -3,7 +3,6 @@
 namespace App\Domains\Dashboard\Controllers;
 
 use App\Domains\Campaign\Models\CampaignSubscription;
-use App\Domains\User\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,10 +11,6 @@ class CustomerDashboardController
     /** Retorna o estado inicial da dashboard do anunciante. */
     public function index(Request $request): JsonResponse
     {
-        if ($request->user()->role !== User::ROLE_CUSTOMER) {
-            abort(403, 'Esta área é exclusiva para anunciantes.');
-        }
-
         $hasActiveSubscription = CampaignSubscription::query()
             ->where('user_id', $request->user()->id)
             ->where('status', CampaignSubscription::STATUS_ACTIVE)

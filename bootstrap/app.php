@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Auth\Middleware\EnsureCustomerAccess;
 use App\Domains\Auth\Middleware\EnsurePlatformAccess;
 use App\Http\Middleware\EnsureUserHasPermission;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
 
         $middleware->alias([
+            'customer' => EnsureCustomerAccess::class,
             'permission' => EnsureUserHasPermission::class,
             'platform' => EnsurePlatformAccess::class,
         ]);

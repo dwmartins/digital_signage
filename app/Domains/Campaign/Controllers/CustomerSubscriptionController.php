@@ -3,7 +3,6 @@
 namespace App\Domains\Campaign\Controllers;
 
 use App\Domains\Campaign\Models\CampaignSubscription;
-use App\Domains\User\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,10 +13,6 @@ class CustomerSubscriptionController extends Controller
     /** Lista somente as assinaturas pertencentes ao anunciante autenticado. */
     public function index(Request $request): JsonResponse
     {
-        if ($request->user()->role !== User::ROLE_CUSTOMER) {
-            abort(403, 'Esta área é exclusiva para anunciantes.');
-        }
-
         $validated = $request->validate([
             'status' => ['nullable', Rule::in([
                 CampaignSubscription::STATUS_PENDING,

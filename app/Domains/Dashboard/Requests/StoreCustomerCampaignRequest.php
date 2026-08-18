@@ -4,7 +4,6 @@ namespace App\Domains\Dashboard\Requests;
 
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Category\Models\Category;
-use App\Domains\User\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +11,7 @@ class StoreCustomerCampaignRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === User::ROLE_CUSTOMER;
+        return true;
     }
 
     public function rules(): array

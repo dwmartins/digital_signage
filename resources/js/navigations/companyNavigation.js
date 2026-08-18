@@ -43,4 +43,5 @@ export const platformNavItems = [
 
 export const customerNavItems = [
     { label: 'Dashboard', icon: 'pi pi-chart-line', to: '/painel/inicio' },
+    { label: 'Minhas assinaturas', icon: 'pi pi-file-check', to: '/painel/assinaturas' },
 ];

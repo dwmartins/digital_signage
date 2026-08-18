@@ -1,7 +1,8 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import campaigns from './campaigns';
+import subscriptions from './subscriptions';
 
 const dashboardView = () => import('@/views/customer/DashboardView.vue');
-const campaignOnboardingView = () => import('@/views/customer/CampaignOnboardingView.vue');
 const profileView = () => import('@/views/ProfileView.vue');
 
 export default [
@@ -26,12 +27,8 @@ export default [
                 name: 'customer.profile',
                 component: profileView
             },
-            {
-                path: 'comecar',
-                name: 'customer.campaign-onboarding',
-                component: campaignOnboardingView,
-                meta: { title: 'Começar campanha' },
-            },
+            ...subscriptions,
+            ...campaigns,
         ],
     },
 ];

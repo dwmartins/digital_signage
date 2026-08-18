@@ -5,7 +5,6 @@ namespace App\Domains\Dashboard\Controllers;
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
 use App\Domains\Campaign\Services\CampaignStatusService;
-use App\Domains\Category\Models\Category;
 use App\Domains\Dashboard\Requests\StoreCustomerCampaignRequest;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Establishment\Models\Establishment;
@@ -26,7 +25,7 @@ class CustomerCampaignOnboardingController
     {
     }
 
-    /** Retorna os planos e categorias disponíveis para a contratação. */
+    /** Retorna os planos, pontos e mídias disponíveis para a contratação. */
     public function options(Request $request): JsonResponse
     {
         return response()->json([
@@ -34,10 +33,6 @@ class CustomerCampaignOnboardingController
                 ->where('status', Plan::STATUS_ACTIVE)
                 ->orderBy('price')
                 ->get(),
-            'categories' => Category::query()
-                ->where('status', Category::STATUS_ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name']),
             'display_points' => DisplayPoint::query()
                 ->with([
                     'establishment.city.state:id,name,code',
@@ -206,7 +201,6 @@ class CustomerCampaignOnboardingController
                     'status' => CampaignStatusService::forSubscription($subscription->status),
                 ]);
 
-                $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids']);
 
                 $uploadedMedia = $files->map(function ($file, int $index) use ($campaign, $customerId, $plan, $request, &$storedFiles): MediaAsset {
@@ -310,7 +304,7 @@ class CustomerCampaignOnboardingController
 
             return response()->json([
                 'message' => 'Campanha enviada com sucesso. Sua contratação agora aguarda aprovação.',
-                'campaign' => $result['campaign']->load(['categories', 'mediaAssets']),
+                'campaign' => $result['campaign']->load('mediaAssets'),
                 'subscription' => $result['subscription']->load('plan'),
             ], 201);
         } catch (Throwable $exception) {

@@ -4,10 +4,6 @@ defineProps({
         type: Object,
         required: true,
     },
-    categories: {
-        type: Array,
-        default: () => [],
-    },
 });
 </script>
 
@@ -20,7 +16,7 @@ defineProps({
         </div>
 
         <div class="row g-4">
-            <div class="col-12 col-lg-7">
+            <div class="col-12">
                 <div class="field">
                     <label><span class="text-danger me-1">*</span>Nome da campanha</label>
                     <InputText
@@ -30,23 +26,6 @@ defineProps({
                         fluid
                     />
                     <small class="text-muted">Este nome será usado para identificar sua campanha.</small>
-                </div>
-            </div>
-
-            <div class="col-12 col-lg-5">
-                <div class="field">
-                    <label>Categorias</label>
-                    <MultiSelect
-                        v-model="form.category_ids"
-                        :options="categories"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Selecione, se desejar"
-                        filter
-                        display="chip"
-                        fluid
-                    />
-                    <small class="text-muted">Ajuda a classificar o conteúdo da campanha.</small>
                 </div>
             </div>
 
@@ -76,35 +55,4 @@ defineProps({
     letter-spacing: 0.08em;
 }
 
-.field {
-    min-width: 0;
-}
-
-:deep(.p-multiselect) {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-}
-
-:deep(.p-multiselect-label-container) {
-    min-width: 0;
-}
-
-:deep(.p-multiselect-label) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    min-width: 0;
-    white-space: normal;
-}
-
-:deep(.p-multiselect-chip) {
-    max-width: 100%;
-}
-
-:deep(.p-multiselect-chip .p-chip-label) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
 </style>

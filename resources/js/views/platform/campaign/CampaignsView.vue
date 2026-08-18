@@ -16,7 +16,6 @@ const router = useRouter();
 const campaigns = ref([]);
 const campaign = ref(null);
 const customers = ref([]);
-const categories = ref([]);
 const loading = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(7);
@@ -27,7 +26,6 @@ const dialogs = reactive({ details: false, delete: false, filters: false });
 const filters = reactive({
     global: { value: null, type: "string" },
     user_id: { value: null, type: "number" },
-    category_id: { value: null, type: "number" },
     status: { value: null, type: "string" },
 });
 
@@ -62,7 +60,6 @@ const fetchOptions = async () => {
         ...item,
         full_name: `${item.name} ${item.last_name ?? ""}`.trim(),
     }));
-    categories.value = response.categories ?? [];
 };
 
 const fetchAll = async (page = 1) => {
@@ -177,7 +174,7 @@ onMounted(async () => {
                     class="row g-3 align-items-end"
                     @submit.prevent="fetchAll(1)"
                 >
-                    <div class="col-lg-3">
+                    <div class="col-lg-4">
                         <div class="field">
                             <label>Buscar</label
                             ><InputText
@@ -201,21 +198,7 @@ onMounted(async () => {
                             />
                         </div>
                     </div>
-                    <div class="col-lg-2">
-                        <div class="field">
-                            <label>Categoria</label
-                            ><Select
-                                v-model="filters.category_id.value"
-                                :options="categories"
-                                optionLabel="name"
-                                optionValue="id"
-                                filter
-                                showClear
-                                fluid
-                            />
-                        </div>
-                    </div>
-                    <div class="col-lg-2">
+                    <div class="col-lg-3">
                         <div class="field">
                             <label>Status</label
                             ><Select
@@ -228,7 +211,7 @@ onMounted(async () => {
                             />
                         </div>
                     </div>
-                    <div class="col-lg-2 d-flex gap-2">
+                    <div class="col-lg-2 d-flex justify-content-end gap-2">
                         <Button
                             icon="pi pi-filter-slash"
                             severity="secondary"
@@ -270,18 +253,6 @@ onMounted(async () => {
                         optionLabel="full_name"
                         optionValue="id"
                         placeholder="Cliente"
-                        filter
-                        showClear
-                        fluid
-                    />
-                </div>
-                <div class="col-12">
-                    <Select
-                        v-model="filters.category_id.value"
-                        :options="categories"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Categoria"
                         filter
                         showClear
                         fluid

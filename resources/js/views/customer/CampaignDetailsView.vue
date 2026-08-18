@@ -142,7 +142,6 @@ onMounted(fetchCampaign);
                             <h1 class="h3 fw-bold mb-2">{{ campaign.name }}</h1>
                             <p class="text-muted mb-3">{{ campaign.description || "Nenhuma descrição foi adicionada a esta campanha." }}</p>
                             <div class="d-flex flex-wrap gap-2">
-                                <Tag v-for="category in campaign.categories" :key="category.id" :value="category.name" severity="secondary" />
                                 <Tag :value="campaign.playback_mode === 'random' ? 'Exibição aleatória' : 'Ordem definida por você'" :icon="campaign.playback_mode === 'random' ? 'pi pi-shuffle' : 'pi pi-list'" severity="info" />
                             </div>
                         </div>

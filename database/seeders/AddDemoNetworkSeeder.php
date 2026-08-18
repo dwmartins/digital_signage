@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Establishment\Models\Establishment;
 use App\Domains\Locality\Models\City;
@@ -23,7 +22,6 @@ class AddDemoNetworkSeeder extends Seeder
     public function run(): void
     {
         $this->createCustomers();
-        $this->createCategories();
         $this->createPlans();
 
         $state = State::query()->where('code', 'SP')->firstOrFail();
@@ -115,30 +113,6 @@ class AddDemoNetworkSeeder extends Seeder
                     'role' => User::ROLE_CUSTOMER,
                     'status' => User::STATUS_ACTIVE,
                     'audit_logs_enabled' => true,
-                ],
-            );
-        }
-    }
-
-    /**
-     * Adiciona categorias comuns para classificar campanhas.
-     */
-    private function createCategories(): void
-    {
-        $categories = [
-            ['name' => 'Alimentação', 'slug' => 'alimentacao', 'description' => 'Restaurantes, lanchonetes, cafeterias e alimentação em geral.'],
-            ['name' => 'Eletrônicos', 'slug' => 'eletronicos', 'description' => 'Lojas de tecnologia, informática e eletrônicos.'],
-            ['name' => 'Moda', 'slug' => 'moda', 'description' => 'Vestuário, calçados, acessórios e tendências.'],
-            ['name' => 'Saúde e bem-estar', 'slug' => 'saude-e-bem-estar', 'description' => 'Academias, clínicas, farmácias e serviços de bem-estar.'],
-            ['name' => 'Serviços', 'slug' => 'servicos', 'description' => 'Prestadores de serviços e negócios locais.'],
-        ];
-
-        foreach ($categories as $category) {
-            Category::query()->updateOrCreate(
-                ['slug' => $category['slug']],
-                [
-                    ...$category,
-                    'status' => Category::STATUS_ACTIVE,
                 ],
             );
         }

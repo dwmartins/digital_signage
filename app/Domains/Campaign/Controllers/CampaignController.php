@@ -8,7 +8,6 @@ use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
 use App\Domains\Campaign\Requests\CampaignRequest;
 use App\Domains\Campaign\Services\CampaignStatusService;
-use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Media\Models\MediaAssetDistribution;
@@ -32,10 +31,10 @@ class CampaignController extends Controller
     {
         $validated = $request->validate([
             'global' => ['nullable', 'string', 'max:255'], 'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'], 'status' => ['nullable', Rule::in($this->statuses())],
+            'status' => ['nullable', Rule::in($this->statuses())],
             'page' => ['nullable', 'integer', 'min:1'], 'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
-        $query = Campaign::query()->with(['customer:id,name,last_name,email', 'categories:id,name',
+        $query = Campaign::query()->with(['customer:id,name,last_name,email',
             'mediaAssets:id,user_id,name,type,original_name,mime_type,size_bytes', 'subscription.plan:id,name,billing_cycle']);
         if ($search = $validated['global'] ?? null) {
             $query->where(fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%")
@@ -43,9 +42,6 @@ class CampaignController extends Controller
         }
         if ($value = $validated['user_id'] ?? null) {
             $query->where('user_id', $value);
-        }
-        if ($value = $validated['category_id'] ?? null) {
-            $query->whereHas('categories', fn ($query) => $query->whereKey($value));
         }
         if ($value = $validated['status'] ?? null) {
             $query->where('status', $value);
@@ -59,7 +55,6 @@ class CampaignController extends Controller
     {
         return response()->json([
             'customers' => User::query()->where('role', User::ROLE_CUSTOMER)->where('status', User::STATUS_ACTIVE)->orderBy('name')->get(['id', 'name', 'last_name', 'email']),
-            'categories' => Category::query()->where('status', Category::STATUS_ACTIVE)->orderBy('name')->get(['id', 'name']),
             'display_points' => DisplayPoint::query()
                 ->where('status', DisplayPoint::STATUS_ACTIVE)
                 ->whereHas('establishment', fn ($query) => $query->where('status', 'active'))
@@ -156,7 +151,7 @@ class CampaignController extends Controller
     public function show(int $id): JsonResponse
     {
         $campaign = Campaign::query()->with([
-            'customer:id,name,last_name,email', 'categories:id,name',
+            'customer:id,name,last_name,email',
             'displayPoints.establishment.city.state:id,name,code',
             'displayPoints.establishment.neighborhood:id,city_id,name',
             'mediaAssets.approver:id,name,last_name',
@@ -217,7 +212,6 @@ class CampaignController extends Controller
                     'description' => $data['description'] ?? null,
                     'playback_mode' => $this->playbackMode($data, $subscription),
                     'status' => $this->campaignStatus($subscription, $data['status'] ?? null)]);
-                $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
                 $campaign->mediaAssets()->sync($mediaAssets->mapWithKeys(
                     fn (MediaAsset $media, int $index) => [$media->id => ['position' => $index + 1]],
@@ -228,7 +222,7 @@ class CampaignController extends Controller
 
                 return compact('campaign', 'libraryMedia', 'uploadedMedia');
             });
-            $campaign = $result['campaign']->load(['customer', 'categories', 'mediaAssets', 'subscription.plan']);
+            $campaign = $result['campaign']->load(['customer', 'mediaAssets', 'subscription.plan']);
             $result['libraryMedia']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'library', $request));
             $result['uploadedMedia']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'campaign', $request));
             AuditLogger::record(module: AuditLog::MODULE_CAMPAIGNS, action: AuditLog::ACTION_CREATED, description: "Campanha {$campaign->name} criada e vinculada à assinatura #{$data['subscription_id']}.", auditable: $campaign, newValues: $campaign->toArray(), request: $request);
@@ -252,7 +246,7 @@ class CampaignController extends Controller
         if ((int) $data['subscription_id'] !== (int) $campaign->subscription?->id) {
             return response()->json(['message' => 'A assinatura de uma campanha existente não pode ser alterada.'], 422);
         }
-        $oldValues = $campaign->load(['categories', 'displayPoints', 'mediaAssets', 'subscription'])->toArray();
+        $oldValues = $campaign->load(['displayPoints', 'mediaAssets', 'subscription'])->toArray();
         $paths = [];
 
         try {
@@ -268,7 +262,6 @@ class CampaignController extends Controller
                         $campaign->status,
                     ),
                 ]);
-                $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
                 $existingIds = $campaign->mediaAssets()->pluck('media_assets.id');
                 $libraryMedia = collect($data['media_asset_ids'] ?? [])
@@ -304,7 +297,7 @@ class CampaignController extends Controller
                 return ['library' => $libraryMedia, 'uploaded' => $uploadedMedia];
             });
 
-            $campaign->refresh()->load(['customer', 'categories', 'displayPoints.establishment', 'mediaAssets', 'subscription.plan']);
+            $campaign->refresh()->load(['customer', 'displayPoints.establishment', 'mediaAssets', 'subscription.plan']);
             $addedMedia['library']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'library', $request));
             $addedMedia['uploaded']->each(fn (MediaAsset $media) => $this->recordMediaAdded($media, $campaign, 'campaign', $request));
             AuditLogger::record(module: AuditLog::MODULE_CAMPAIGNS, action: AuditLog::ACTION_UPDATED, description: "Campanha {$campaign->name} atualizada.", auditable: $campaign, oldValues: $oldValues, newValues: $campaign->toArray(), request: $request);
@@ -364,7 +357,7 @@ class CampaignController extends Controller
 
         return response()->json([
             'message' => 'Mídia desvinculada da campanha com sucesso.',
-            'campaign' => $campaign->fresh()->load(['customer', 'categories', 'mediaAssets', 'subscription.customer', 'subscription.plan']),
+            'campaign' => $campaign->fresh()->load(['customer', 'mediaAssets', 'subscription.customer', 'subscription.plan']),
         ]);
     }
 

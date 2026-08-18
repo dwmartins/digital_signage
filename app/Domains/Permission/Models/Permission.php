@@ -26,11 +26,6 @@ class Permission extends Model
     public const CUSTOMERS_DELETE = 'customers.delete';
     public const CUSTOMERS_AUDIT_UPDATE = 'customers.audit.update';
 
-    public const CATEGORIES_VIEW = 'categories.view';
-    public const CATEGORIES_CREATE = 'categories.create';
-    public const CATEGORIES_UPDATE = 'categories.update';
-    public const CATEGORIES_DELETE = 'categories.delete';
-
     public const LOCALITIES_VIEW = 'localities.view';
     public const LOCALITIES_CREATE = 'localities.create';
     public const LOCALITIES_UPDATE = 'localities.update';
@@ -158,31 +153,6 @@ class Permission extends Model
                 'group' => 'customers',
                 'group_label' => 'Clientes anunciantes',
                 'description' => 'Permite excluir usuários anunciantes da plataforma.',
-            ],
-
-            self::CATEGORIES_VIEW => [
-                'name' => 'Visualizar categorias',
-                'group' => 'categories',
-                'group_label' => 'Categorias',
-                'description' => 'Permite consultar as categorias utilizadas nas campanhas.',
-            ],
-            self::CATEGORIES_CREATE => [
-                'name' => 'Criar categorias',
-                'group' => 'categories',
-                'group_label' => 'Categorias',
-                'description' => 'Permite cadastrar categorias para classificação das campanhas.',
-            ],
-            self::CATEGORIES_UPDATE => [
-                'name' => 'Editar categorias',
-                'group' => 'categories',
-                'group_label' => 'Categorias',
-                'description' => 'Permite alterar dados e status das categorias.',
-            ],
-            self::CATEGORIES_DELETE => [
-                'name' => 'Excluir categorias',
-                'group' => 'categories',
-                'group_label' => 'Categorias',
-                'description' => 'Permite excluir categorias que não estejam em uso.',
             ],
 
             self::LOCALITIES_VIEW => [
@@ -377,7 +347,7 @@ class Permission extends Model
                 'name' => 'Criar campanhas',
                 'group' => 'campaigns',
                 'group_label' => 'Campanhas',
-                'description' => 'Permite criar campanhas com mídias, categorias e plano.',
+                'description' => 'Permite criar campanhas com mídias e plano.',
             ],
             self::CAMPAIGNS_UPDATE => [
                 'name' => 'Editar campanhas',

@@ -11,11 +11,6 @@ export default {
         ).data;
     },
 
-    /** Retorna as opções disponíveis para os filtros. */
-    async options() {
-        return (await axios.get(`${API_URL}/customer/campaigns/options`)).data;
-    },
-
     /** Retorna todos os detalhes de uma campanha do anunciante. */
     async show(id) {
         return (await axios.get(`${API_URL}/customer/campaigns/${id}`)).data;

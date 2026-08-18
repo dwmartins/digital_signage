@@ -6,7 +6,6 @@ use App\Domains\Audit\Models\AuditLog;
 use App\Domains\Audit\Services\AuditLogger;
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
-use App\Domains\Category\Models\Category;
 use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Media\Models\MediaAssetDistribution;
 use App\Http\Controllers\Controller;
@@ -34,7 +33,6 @@ class CustomerCampaignController extends Controller
                 CampaignSubscription::STATUS_EXPIRED,
                 CampaignSubscription::STATUS_CANCELLED,
             ])],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'min:1', 'max:20'],
         ]);
@@ -56,7 +54,6 @@ class CustomerCampaignController extends Controller
 
         $campaigns = $baseQuery
             ->with([
-                'categories:id,name',
                 'subscription:id,campaign_id,plan_id,status,price,billing_cycle,media_type,screen_limit,media_limit,starts_at,ends_at',
                 'subscription.plan:id,name',
             ])
@@ -81,8 +78,6 @@ class CustomerCampaignController extends Controller
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($validated['subscription_status'] ?? null, fn ($query, $status) => $query
                 ->whereHas('subscription', fn ($query) => $query->where('status', $status)))
-            ->when($validated['category_id'] ?? null, fn ($query, $categoryId) => $query
-                ->whereHas('categories', fn ($query) => $query->whereKey($categoryId)))
             ->latest()
             ->paginate((int) ($validated['perPage'] ?? 6));
 
@@ -98,28 +93,12 @@ class CustomerCampaignController extends Controller
         ]);
     }
 
-    /** Retorna opções informativas para os filtros da listagem. */
-    public function options(Request $request): JsonResponse
-    {
-        $customerId = $request->user()->id;
-
-        return response()->json([
-            'categories' => Category::query()
-                ->whereHas('campaigns', fn ($query) => $query->where('campaigns.user_id', $customerId))
-                ->withCount(['campaigns as campaigns_count' => fn ($query) => $query
-                    ->where('campaigns.user_id', $customerId)])
-                ->orderBy('name')
-                ->get(['id', 'name']),
-        ]);
-    }
-
     /** Retorna todos os detalhes de uma campanha do anunciante. */
     public function show(Request $request, int $id): JsonResponse
     {
         $campaign = Campaign::query()
             ->where('user_id', $request->user()->id)
             ->with([
-                'categories:id,name',
                 'displayPoints.establishment.city.state:id,name,code',
                 'displayPoints.establishment.neighborhood:id,city_id,name',
                 'mediaAssets',

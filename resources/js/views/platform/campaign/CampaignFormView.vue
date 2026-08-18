@@ -10,7 +10,6 @@ import Spinner from "@/components/shared/Spinner.vue";
 const route = useRoute();
 const router = useRouter();
 const campaign = ref(null);
-const categories = ref([]);
 const subscriptions = ref([]);
 const displayPoints = ref([]);
 const loading = ref(true);
@@ -22,7 +21,6 @@ const fetchData = async () => {
         const requests = [campaignService.options()];
         if (isUpdate.value) requests.push(campaignService.show(route.params.id));
         const [options, response] = await Promise.all(requests);
-        categories.value = options.categories ?? [];
         subscriptions.value = options.subscriptions ?? [];
         displayPoints.value = options.display_points ?? [];
         campaign.value = response?.campaign ?? null;
@@ -66,7 +64,7 @@ onMounted(fetchData);
 
         <div class="mb-4">
             <h2 class="mb-1">{{ isUpdate ? 'Editar campanha' : 'Nova campanha' }}</h2>
-            <p class="text-muted mb-0">{{ isUpdate ? 'Gerencie a contratação, os conteúdos e a classificação da campanha.' : 'Vincule uma assinatura disponível e adicione os conteúdos permitidos pelo plano.' }}</p>
+            <p class="text-muted mb-0">{{ isUpdate ? 'Gerencie a contratação e os conteúdos da campanha.' : 'Vincule uma assinatura disponível e adicione os conteúdos permitidos pelo plano.' }}</p>
         </div>
 
         <Card v-if="loading">
@@ -76,7 +74,7 @@ onMounted(fetchData);
                 </div>
             </template>
         </Card>
-        <CampaignForm v-else :modelValue="true" :campaign="campaign" :categories="categories"
+        <CampaignForm v-else :modelValue="true" :campaign="campaign"
             :subscriptions="subscriptions" :displayPoints="displayPoints" @saved="back" @cancelled="back" @media-detached="updateCampaign" />
     </section>
 </template>

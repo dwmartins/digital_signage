@@ -17,7 +17,6 @@ const saving = ref(false);
 const completed = ref(false);
 const activeStep = ref("1");
 const plans = ref([]);
-const categories = ref([]);
 const displayPoints = ref([]);
 const libraryMedia = ref([]);
 
@@ -25,7 +24,6 @@ const form = reactive({
     plan_id: null,
     name: "",
     description: "",
-    category_ids: [],
     display_point_ids: [],
     media_asset_ids: [],
     playback_mode: "sequential",
@@ -45,7 +43,6 @@ const fetchOptions = async () => {
         loading.value = true;
         const response = await customerCampaignService.options();
         plans.value = response.plans ?? [];
-        categories.value = response.categories ?? [];
         displayPoints.value = response.display_points ?? [];
         libraryMedia.value = response.media_assets ?? [];
     } catch (error) {
@@ -391,7 +388,7 @@ onMounted(() => {
                         </StepPanel>
 
                         <StepPanel value="2">
-                            <CampaignStepContent :form="form" :categories="categories" />
+                            <CampaignStepContent :form="form" />
                             <div class="step-actions d-flex justify-content-between mt-4 pt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" severity="secondary" outlined @click="activeStep = '1'" />
                                 <Button label="Continuar" icon="pi pi-arrow-right" iconPos="right" @click="nextFromCampaign" />

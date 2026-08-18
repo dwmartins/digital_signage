@@ -2,7 +2,6 @@
 
 namespace App\Domains\Campaign\Models;
 
-use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Media\Models\MediaAsset;
 use App\Domains\Media\Models\MediaAssetDistribution;
@@ -32,11 +31,6 @@ class Campaign extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function categories(): BelongsToMany
-    {
-        return $this->belongsToMany(Category::class)->withTimestamps();
     }
 
     public function mediaAssets(): BelongsToMany

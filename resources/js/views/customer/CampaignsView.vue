@@ -11,7 +11,6 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 const loading = ref(true);
 const campaigns = ref([]);
-const categories = ref([]);
 const summary = ref({});
 const pagination = ref({});
 const currentPage = ref(1);
@@ -22,7 +21,6 @@ const filters = reactive({
     global: null,
     status: null,
     subscription_status: null,
-    category_id: null,
 });
 
 const statusOptions = [
@@ -72,11 +70,6 @@ const distributionProgress = (campaign) => campaign.distribution_count
     ? Math.round((campaign.displayed_distribution_count / campaign.distribution_count) * 100)
     : 0;
 
-const fetchOptions = async () => {
-    const response = await customerCampaignService.options();
-    categories.value = response.categories ?? [];
-};
-
 const fetchCampaigns = async (page = 1) => {
     try {
         loading.value = true;
@@ -108,14 +101,7 @@ const changePage = ({ page, rows }) => {
     fetchCampaigns(page + 1);
 };
 
-onMounted(async () => {
-    try {
-        await fetchOptions();
-    } catch (error) {
-        showAlert("error", error.response?.data);
-    }
-    fetchCampaigns();
-});
+onMounted(fetchCampaigns);
 </script>
 
 <template>
@@ -169,13 +155,13 @@ onMounted(async () => {
         <Card class="filters-card d-none d-lg-block border-0 shadow-sm mb-4">
             <template #content>
                 <form class="row g-3 align-items-end" @submit.prevent="applyFilters">
-                    <div class="col-xl-3">
+                    <div class="col-lg-4">
                         <div class="field">
                             <label>Buscar campanha</label>
                             <InputText v-model="filters.global" placeholder="Nome, descrição ou plano" fluid />
                         </div>
                     </div>
-                    <div class="col-xl-2">
+                    <div class="col-lg-3">
                         <div class="field">
                             <label>Status da campanha</label>
                             <Select v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" showClear fluid>
@@ -188,7 +174,7 @@ onMounted(async () => {
                             </Select>
                         </div>
                     </div>
-                    <div class="col-xl-2">
+                    <div class="col-lg-3">
                         <div class="field">
                             <label>Situação da assinatura</label>
                             <Select v-model="filters.subscription_status" :options="subscriptionStatusOptions" optionLabel="label" optionValue="value" showClear fluid>
@@ -201,17 +187,7 @@ onMounted(async () => {
                             </Select>
                         </div>
                     </div>
-                    <div class="col-xl-2">
-                        <div class="field">
-                            <label>Categoria</label>
-                            <Select v-model="filters.category_id" :options="categories" optionLabel="name" optionValue="id" filter showClear fluid>
-                                <template #option="{ option }">
-                                    <div><strong class="d-block">{{ option.name }}</strong><small class="text-muted">{{ option.campaigns_count }} campanha(s) nesta categoria</small></div>
-                                </template>
-                            </Select>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 d-flex justify-content-end gap-2">
+                    <div class="col-lg-2 d-flex justify-content-end gap-2">
                         <Button type="button" icon="pi pi-filter-slash" severity="secondary" outlined :disabled="!hasFilters" v-tooltip.top="'Limpar filtros'" @click="clearFilters" />
                         <Button type="submit" label="Buscar" icon="pi pi-search" />
                     </div>
@@ -250,7 +226,6 @@ onMounted(async () => {
 
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <Tag :value="subscriptionStatus(campaign.subscription?.status).label" :severity="subscriptionStatus(campaign.subscription?.status).severity" />
-                            <Tag v-for="category in campaign.categories" :key="category.id" :value="category.name" severity="secondary" />
                         </div>
 
                         <div class="row g-2 mb-3">
@@ -313,17 +288,6 @@ onMounted(async () => {
                                     <strong class="d-block">{{ option.label }}</strong>
                                     <small class="text-muted">{{ option.description }}</small>
                                 </div>
-                            </div>
-                        </template>
-                    </Select>
-                </div>
-                <div class="field">
-                    <label>Categoria</label>
-                    <Select v-model="filters.category_id" :options="categories" optionLabel="name" optionValue="id" filter showClear fluid>
-                        <template #option="{ option }">
-                            <div>
-                                <strong class="d-block">{{ option.name }}</strong>
-                                <small class="text-muted">{{ option.campaigns_count }} campanha(s) nesta categoria</small>
                             </div>
                         </template>
                     </Select>

@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'customer'])->group(function () {
     Route::get('/customer/campaigns', [CustomerCampaignController::class, 'index']);
-    Route::get('/customer/campaigns/options', [CustomerCampaignController::class, 'options']);
     Route::get('/customer/campaigns/media/{id}/content', [CustomerCampaignController::class, 'content']);
     Route::get('/customer/campaigns/{id}', [CustomerCampaignController::class, 'show']);
     Route::patch('/customer/campaigns/{id}/status', [CustomerCampaignController::class, 'updateStatus']);

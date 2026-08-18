@@ -15,7 +15,6 @@ export default {
         payload.append("name", data.name);
         payload.append("description", data.description ?? "");
         payload.append("playback_mode", data.playback_mode);
-        data.category_ids.forEach((id) => payload.append("category_ids[]", id));
         data.display_point_ids.forEach((id) => payload.append("display_point_ids[]", id));
         data.media_asset_ids.forEach((id) => payload.append("media_asset_ids[]", id));
         data.files.forEach((file) => payload.append("files[]", file));

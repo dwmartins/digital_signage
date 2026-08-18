@@ -1,7 +1,6 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import supportUsers from './supportUsers';
 import customerUsers from './customerUsers';
-import categories from './categories';
 import establishments from './establishments';
 import screens from './screens';
 import players from './players';
@@ -41,7 +40,6 @@ export default [
 
             ...supportUsers,
             ...customerUsers,
-            ...categories,
             ...establishments,
             ...screens,
             ...players,

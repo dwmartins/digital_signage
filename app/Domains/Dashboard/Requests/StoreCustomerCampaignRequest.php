@@ -3,7 +3,6 @@
 namespace App\Domains\Dashboard\Requests;
 
 use App\Domains\Campaign\Models\Campaign;
-use App\Domains\Category\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,12 +19,6 @@ class StoreCustomerCampaignRequest extends FormRequest
             'plan_id' => ['required', 'integer', 'exists:plans,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'category_ids' => ['nullable', 'array'],
-            'category_ids.*' => [
-                'integer',
-                'distinct',
-                Rule::exists('categories', 'id')->where('status', Category::STATUS_ACTIVE),
-            ],
             'display_point_ids' => ['required', 'array', 'min:1'],
             'display_point_ids.*' => ['integer', 'distinct', 'exists:display_points,id'],
             'playback_mode' => ['required', Rule::in([
@@ -66,7 +59,6 @@ class StoreCustomerCampaignRequest extends FormRequest
             'description' => $this->filled('description')
                 ? trim((string) $this->input('description'))
                 : null,
-            'category_ids' => $this->input('category_ids', []),
             'display_point_ids' => $this->input('display_point_ids', []),
             'media_asset_ids' => $this->input('media_asset_ids', []),
             'media_order' => $this->input('media_order', []),

@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from 'vue-router';
 import { API_URL } from '@/helpers/constants';
 
-const props = defineProps({ modelValue: Boolean, campaign: Object, categories: Array, subscriptions: Array, displayPoints: Array });
+const props = defineProps({ modelValue: Boolean, campaign: Object, subscriptions: Array, displayPoints: Array });
 
 const emit = defineEmits(["update:modelValue", "saved", "cancelled", "media-detached"]);
 
@@ -31,7 +31,7 @@ const cities = ref([]);
 const neighborhoods = ref([]);
 const pointFilters = reactive({ search: "", state_id: null, city_id: null, neighborhood_id: null });
 
-const form = reactive({ id: null, subscription_id: null, name: "", description: "", playback_mode: "sequential", status: "active", category_ids: [], display_point_ids: [], files: [], media_asset_ids: [], media_order: [] });
+const form = reactive({ id: null, subscription_id: null, name: "", description: "", playback_mode: "sequential", status: "active", display_point_ids: [], files: [], media_asset_ids: [], media_order: [] });
 const campaignStatusOptions = [
     { label: "Ativa", value: "active" },
     { label: "Pendente", value: "pending", disabled: true },
@@ -382,7 +382,6 @@ watch(() => props.modelValue, (opened) => {
         id: campaign?.id ?? null, subscription_id: campaign?.subscription?.id ?? null,
         name: campaign?.name ?? "", description: campaign?.description ?? "",
         playback_mode: campaign?.playback_mode ?? "sequential", status: campaign?.status ?? "active",
-        category_ids: campaign?.categories?.map((item) => item.id) ?? [],
         display_point_ids: campaign?.display_points?.map((item) => item.id) ?? [],
         files: [], media_asset_ids: [], media_order: campaignMedia.value.map(mediaKey)
     });
@@ -609,12 +608,6 @@ onBeforeUnmount(clearFilePreview);
                             ? 'As mídias serão escolhidas em ordem aleatória.'
                             : 'As mídias serão exibidas seguindo a ordem da campanha.' }}
                     </small>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="field"><label>Categorias</label>
-                    <MultiSelect v-model="form.category_ids" :options="categories" optionLabel="name" optionValue="id"
-                        placeholder="Opcional" filter display="chip" fluid />
                 </div>
             </div>
             <div class="col-12">

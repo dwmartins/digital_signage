@@ -6,7 +6,6 @@ export const platformNavItems = [
         icon: 'pi pi-megaphone',
         children: [
             { label: 'Campanhas', icon: 'pi pi-megaphone', to: '/platform/campanhas', permission: 'campaigns.view' },
-            { label: 'Categorias', icon: 'pi pi-tags', to: '/platform/categorias', permission: 'categories.view' },
             { label: 'Biblioteca de mídias', icon: 'pi pi-images', to: '/platform/midias', permission: 'media.view' },
         ],
     },

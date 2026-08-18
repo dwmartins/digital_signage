@@ -20,15 +20,6 @@ return new class extends Migration
             $table->index(['user_id', 'status']);
         });
 
-        Schema::create('campaign_category', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('campaign_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('category_id')->constrained()->restrictOnDelete();
-            $table->timestamps();
-
-            $table->unique(['campaign_id', 'category_id']);
-        });
-
         Schema::create('campaign_media_asset', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')->constrained()->cascadeOnDelete();
@@ -79,7 +70,6 @@ return new class extends Migration
         Schema::dropIfExists('media_asset_distributions');
         Schema::dropIfExists('campaign_display_point');
         Schema::dropIfExists('campaign_media_asset');
-        Schema::dropIfExists('campaign_category');
         Schema::dropIfExists('campaigns');
     }
 };

@@ -3,6 +3,7 @@
 namespace App\Domains\Campaign\Models;
 
 use App\Domains\Billing\Models\Invoice;
+use App\Domains\Campaign\Services\CampaignStatusService;
 use App\Domains\Plan\Models\Plan;
 use App\Domains\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,6 +21,15 @@ class CampaignSubscription extends Model
     public const STATUS_EXPIRED = 'expired';
 
     public const STATUS_CANCELLED = 'cancelled';
+
+    protected static function booted(): void
+    {
+        static::updated(function (CampaignSubscription $subscription): void {
+            if ($subscription->wasChanged(['status', 'campaign_id'])) {
+                CampaignStatusService::sync($subscription);
+            }
+        });
+    }
 
     protected function casts(): array
     {

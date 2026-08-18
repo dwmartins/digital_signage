@@ -33,7 +33,9 @@ const filters = reactive({
 
 const statusOptions = [
     { label: "Ativa", value: "active" },
-    { label: "Inativa", value: "inactive" },
+    { label: "Pendente", value: "pending" },
+    { label: "Pausada", value: "paused" },
+    { label: "Cancelada", value: "cancelled" },
 ];
 
 const skeletonColumns = [
@@ -125,7 +127,9 @@ const statusLabel = (value) =>
 const statusSeverity = (value) =>
     ({
         active: "success",
-        inactive: "secondary",
+        pending: "warn",
+        paused: "secondary",
+        cancelled: "danger",
     })[value] ?? "secondary";
 
 onMounted(async () => {

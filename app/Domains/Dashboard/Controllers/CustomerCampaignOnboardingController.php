@@ -4,6 +4,7 @@ namespace App\Domains\Dashboard\Controllers;
 
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
+use App\Domains\Campaign\Services\CampaignStatusService;
 use App\Domains\Category\Models\Category;
 use App\Domains\Dashboard\Requests\StoreCustomerCampaignRequest;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
@@ -202,7 +203,7 @@ class CustomerCampaignOnboardingController
                     'playback_mode' => $plan->media_limit > 1
                         ? $data['playback_mode']
                         : Campaign::PLAYBACK_SEQUENTIAL,
-                    'status' => Campaign::STATUS_ACTIVE,
+                    'status' => CampaignStatusService::forSubscription($subscription->status),
                 ]);
 
                 $campaign->categories()->sync($data['category_ids'] ?? []);

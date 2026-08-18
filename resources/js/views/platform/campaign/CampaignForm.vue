@@ -34,7 +34,9 @@ const pointFilters = reactive({ search: "", state_id: null, city_id: null, neigh
 const form = reactive({ id: null, subscription_id: null, name: "", description: "", playback_mode: "sequential", status: "active", category_ids: [], display_point_ids: [], files: [], media_asset_ids: [], media_order: [] });
 const campaignStatusOptions = [
     { label: "Ativa", value: "active" },
-    { label: "Inativa", value: "inactive" },
+    { label: "Pendente", value: "pending", disabled: true },
+    { label: "Pausada", value: "paused" },
+    { label: "Cancelada", value: "cancelled", disabled: true },
 ];
 const playbackModeOptions = [
     { label: "Em sequência", value: "sequential" },
@@ -572,7 +574,7 @@ onBeforeUnmount(clearFilePreview);
                         Status da campanha
                         <i
                             class="pi pi-question-circle text-primary cursor-help"
-                            v-tooltip.top="'Uma campanha ativa fica habilitada para exibição quando os demais requisitos forem atendidos. Uma campanha inativa não será exibida.'"
+                            v-tooltip.top="'Os status Pendente e Cancelada acompanham automaticamente a assinatura. Você pode ativar ou pausar a campanha quando a assinatura estiver ativa.'"
                         ></i>
                     </label>
                     <Select
@@ -580,6 +582,8 @@ onBeforeUnmount(clearFilePreview);
                         :options="campaignStatusOptions"
                         optionLabel="label"
                         optionValue="value"
+                        optionDisabled="disabled"
+                        :disabled="selectedSubscription?.status !== 'active'"
                         fluid
                     />
                 </div>

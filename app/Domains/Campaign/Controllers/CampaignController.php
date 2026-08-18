@@ -7,6 +7,7 @@ use App\Domains\Audit\Services\AuditLogger;
 use App\Domains\Campaign\Models\Campaign;
 use App\Domains\Campaign\Models\CampaignSubscription;
 use App\Domains\Campaign\Requests\CampaignRequest;
+use App\Domains\Campaign\Services\CampaignStatusService;
 use App\Domains\Category\Models\Category;
 use App\Domains\DisplayPoint\Models\DisplayPoint;
 use App\Domains\Media\Models\MediaAsset;
@@ -215,7 +216,7 @@ class CampaignController extends Controller
                 $campaign = Campaign::query()->create(['user_id' => $subscription->user_id, 'name' => $data['name'],
                     'description' => $data['description'] ?? null,
                     'playback_mode' => $this->playbackMode($data, $subscription),
-                    'status' => $data['status'] ?? Campaign::STATUS_ACTIVE]);
+                    'status' => $this->campaignStatus($subscription, $data['status'] ?? null)]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
                 $campaign->mediaAssets()->sync($mediaAssets->mapWithKeys(
@@ -261,7 +262,11 @@ class CampaignController extends Controller
                     'name' => $data['name'],
                     'description' => $data['description'] ?? null,
                     'playback_mode' => $this->playbackMode($data, $campaign->subscription),
-                    'status' => $data['status'] ?? $campaign->status,
+                    'status' => $this->campaignStatus(
+                        $campaign->subscription,
+                        $data['status'] ?? null,
+                        $campaign->status,
+                    ),
                 ]);
                 $campaign->categories()->sync($data['category_ids'] ?? []);
                 $campaign->displayPoints()->sync($data['display_point_ids'] ?? []);
@@ -365,7 +370,30 @@ class CampaignController extends Controller
 
     private function statuses(): array
     {
-        return [Campaign::STATUS_ACTIVE, Campaign::STATUS_INACTIVE];
+        return [
+            Campaign::STATUS_ACTIVE,
+            Campaign::STATUS_PENDING,
+            Campaign::STATUS_PAUSED,
+            Campaign::STATUS_CANCELLED,
+        ];
+    }
+
+    private function campaignStatus(
+        CampaignSubscription $subscription,
+        ?string $requestedStatus,
+        string $currentStatus = Campaign::STATUS_ACTIVE,
+    ): string {
+        if ($subscription->status !== CampaignSubscription::STATUS_ACTIVE) {
+            return CampaignStatusService::forSubscription($subscription->status);
+        }
+
+        if (in_array($requestedStatus, [Campaign::STATUS_ACTIVE, Campaign::STATUS_PAUSED], true)) {
+            return $requestedStatus;
+        }
+
+        return in_array($currentStatus, [Campaign::STATUS_ACTIVE, Campaign::STATUS_PAUSED], true)
+            ? $currentStatus
+            : Campaign::STATUS_ACTIVE;
     }
 
     private function libraryMedia(int $mediaId, CampaignSubscription $subscription): MediaAsset

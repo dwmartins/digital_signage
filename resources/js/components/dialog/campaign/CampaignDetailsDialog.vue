@@ -22,7 +22,9 @@ const visible = computed({
 
 const campaignStatus = (status) => ({
     active: { label: "Ativa", severity: "success" },
-    inactive: { label: "Inativa", severity: "secondary" },
+    pending: { label: "Pendente", severity: "warn" },
+    paused: { label: "Pausada", severity: "secondary" },
+    cancelled: { label: "Cancelada", severity: "danger" },
 })[status] ?? { label: status, severity: "secondary" };
 
 const subscriptionStatus = (status) => ({

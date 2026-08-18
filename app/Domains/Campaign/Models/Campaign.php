@@ -23,7 +23,11 @@ class Campaign extends Model
 
     public const STATUS_ACTIVE = 'active';
 
-    public const STATUS_INACTIVE = 'inactive';
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_PAUSED = 'paused';
+
+    public const STATUS_CANCELLED = 'cancelled';
 
     public function customer(): BelongsTo
     {

@@ -26,7 +26,9 @@ class CampaignRequest extends FormRequest
             ])],
             'status' => ['nullable', Rule::in([
                 Campaign::STATUS_ACTIVE,
-                Campaign::STATUS_INACTIVE,
+                Campaign::STATUS_PENDING,
+                Campaign::STATUS_PAUSED,
+                Campaign::STATUS_CANCELLED,
             ])],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', Category::STATUS_ACTIVE)],

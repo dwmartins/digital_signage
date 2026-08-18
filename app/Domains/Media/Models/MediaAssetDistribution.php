@@ -10,24 +10,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'campaign_id', 'media_asset_id', 'display_point_id', 'position', 'status',
-    'processing_started_at', 'distributed_at', 'last_attempt_at', 'error_message',
+    'processing_started_at', 'downloaded_at', 'distributed_at', 'last_attempt_at',
+    'last_reported_at', 'failed_at', 'downloaded_checksum', 'error_message',
 ])]
 class MediaAssetDistribution extends Model
 {
     public const STATUS_PENDING = 'pending';
-
     public const STATUS_PROCESSING = 'processing';
-
     public const STATUS_DISPLAYED = 'displayed';
-
     public const STATUS_FAILED = 'failed';
 
     protected function casts(): array
     {
         return [
             'processing_started_at' => 'datetime',
+            'downloaded_at' => 'datetime',
             'distributed_at' => 'datetime',
             'last_attempt_at' => 'datetime',
+            'last_reported_at' => 'datetime',
+            'failed_at' => 'datetime',
         ];
     }
 

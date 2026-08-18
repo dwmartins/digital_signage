@@ -57,8 +57,12 @@ return new class extends Migration
             $table->unsignedSmallInteger('position')->default(1);
             $table->string('status', 32)->default('pending')->index();
             $table->timestamp('processing_started_at')->nullable();
+            $table->timestamp('downloaded_at')->nullable();
             $table->timestamp('distributed_at')->nullable();
             $table->timestamp('last_attempt_at')->nullable();
+            $table->timestamp('last_reported_at')->nullable();
+            $table->timestamp('failed_at')->nullable();
+            $table->string('downloaded_checksum', 64)->nullable();
             $table->text('error_message')->nullable();
             $table->timestamps();
 

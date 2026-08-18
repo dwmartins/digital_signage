@@ -252,8 +252,12 @@ class MediaAssetController extends Controller
                     $media->distributions()->update([
                         'status' => MediaAssetDistribution::STATUS_PENDING,
                         'processing_started_at' => null,
+                        'downloaded_at' => null,
                         'distributed_at' => null,
                         'last_attempt_at' => null,
+                        'last_reported_at' => null,
+                        'failed_at' => null,
+                        'downloaded_checksum' => null,
                         'error_message' => null,
                     ]);
                 }
